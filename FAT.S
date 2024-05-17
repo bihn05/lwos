@@ -1,0 +1,3 @@
+dd 0xfffffff0
+dd 0xffffffff
+dd 0xffffffff

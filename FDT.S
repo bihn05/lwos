@@ -1,0 +1,21 @@
+db "WHEEL"
+resb 7
+dd 82
+db "BIN"
+db 0b0000-0001
+dd 0x00000001
+dw 0
+dw 0
+dw 0
+dw 0
+
+db "LWLDR"
+resb 7
+dd 1
+resb 3
+db 0b0000-0011
+dd 0x00000002
+dw 0
+dw 0
+dw 0
+dw 0
