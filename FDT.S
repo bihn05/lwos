@@ -3,7 +3,18 @@ resb 7
 dd 82
 db "BIN"
 db 0b0000-0001
-dd 0x00000001
+dd 0x00000002
+dw 0
+dw 0
+dw 0
+dw 0
+
+db "BASFNT"
+resb 6
+dd 4096
+db "FNT"
+db 0b0000-0001
+dd 0x00000003
 dw 0
 dw 0
 dw 0
@@ -14,7 +25,7 @@ resb 7
 dd 1
 resb 3
 db 0b0000-0011
-dd 0x00000002
+dd 0x0000000b
 dw 0
 dw 0
 dw 0
