@@ -22,7 +22,8 @@ dd bs=512 count=1 seek=0 if=MBR.BIN of=master.img
 dd bs=512 count=128 seek=1 if=FAT.BIN of=master.img
 dd bs=512 count=128 seek=129 if=FDT.BIN of=master.img
 dd bs=512 count=1 seek=257 if=WHEEL.BI_ of=master.img
-dd bs=512 count=1 seek=258 if=LWOS.BIN of=master.img
+dd bs=512 count=8 seek=258 if=BASFNT.FNT of=master.img
+dd bs=512 count=1 seek=266 if=LWOS.BIN of=master.img
 
 pause
 
