@@ -32,7 +32,7 @@ read_disk:
 	out dx, al
 
 	mov dx, 0x1f3
-	mov al, 0x02
+	mov al, 0x0a
 	out dx, al
 
 	mov dx, 0x1f4
