@@ -1,2 +1,4 @@
-# lwos
-OS using asm lang
+# LWOS
+完全使用x86汇编语言编写的操作系统
+搭载LWFAT32文件系统
+根目录下为磁盘组成
