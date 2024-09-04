@@ -1,6 +1,7 @@
 org 0x7c00
 jmp init
 
+db 0
 db "LWSOFT24"			;OEM ID
 dw 0x0200				;bytes per sector
 dd 0x00000800			;number of sectors
@@ -13,6 +14,8 @@ dd 0xffffffff			;volume serial number
 db "LWFAT32 "			;file system name
 
 init:
+	sti
+
 	mov ax, 0
 	mov ss, ax
 	mov ds, ax
@@ -24,11 +27,11 @@ success:
 	mov si, boot_success
 	call print
 
-	jmp 0x500
+	jmp 0x700
 
 read_disk:
 	mov dx, 0x1f2
-	mov al, 1
+	mov al, 2
 	out dx, al
 
 	mov dx, 0x1f3
@@ -60,15 +63,25 @@ read_disk:
 	cmp al, 0x08
 	jnz .not_ready
 
-	mov ax, 0x100
+	mov ax, 0x200
 	mov cx, ax
 	mov dx, 0x1f0
-	mov bx, 0x500
+	mov bx, 0x700
 .go_on_read:
 	in ax, dx
 	mov [ds:bx], ax
 	add bx, 2
 	loop .go_on_read
+	mov dx, 0x1f7
+	mov al, 0xe7
+	out dx, al
+	mov dx, 0x1f6
+	mov al, 0xa0
+	out dx, al
+
+	mov dx, 0x3f6
+	mov al, 4
+	out dx, al
 	ret
 
 

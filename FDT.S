@@ -1,30 +1,27 @@
-db "WHEEL"
-resb 7
+db "WHEEL",0,0,0,0,0,0,0
 dd 82
 db "BIN"
-db 0b0000-0001
+db 0x01
 dd 0x00000002
 dw 0
 dw 0
 dw 0
 dw 0
 
-db "BASFNT"
-resb 6
+db "BASFNT",0,0,0,0,0,0
 dd 4096
 db "FNT"
-db 0b0000-0001
+db 0x01
 dd 0x00000003
 dw 0
 dw 0
 dw 0
 dw 0
 
-db "LWLDR"
-resb 7
+db "LWLDR",0,0,0,0,0,0,0
 dd 1
-resb 3
-db 0b0000-0011
+db 0,0,0
+db 0x03
 dd 0x0000000b
 dw 0
 dw 0

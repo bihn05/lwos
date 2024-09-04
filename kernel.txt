@@ -1,0 +1,27 @@
+Functions
+
+set_cursor(uint_16 pos)
+设置光标位置
+get_cursor(uint_16* pos)
+获取光标位置
+putchara(uint_16 ch)
+打印带属性的字符
+putchar(uint_16 ch)
+打印字符
+nxtl()
+另起一行
+csr_wrap()
+换行
+csr_return()
+回车
+csr_backspace()
+退格
+putstra(uint_16* str)
+打印带属性的字符串
+putstr(uint_16* str)
+打印字符串
+putfhex8(uint_16 val)
+十六进制输出byte
+putfhex16(uint_16 val)
+十六进制输出word
+
