@@ -10,7 +10,7 @@ dw 0
 
 db "BASFNT",0,0,0,0,0,0
 dd 4096
-db "FNT"
+db "BIN"
 db 0x01
 dd 0x00000003
 dw 0
@@ -23,6 +23,16 @@ dd 1
 db 0,0,0
 db 0x03
 dd 0x0000000b
+dw 0
+dw 0
+dw 0
+dw 0
+
+db "START",0,0,0,0,0,0
+dd 4096
+db "SYS"
+db 0b0000_0011
+dd 0x0000000f
 dw 0
 dw 0
 dw 0

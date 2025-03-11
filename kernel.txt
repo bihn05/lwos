@@ -24,4 +24,4 @@ putfhex8(uint_16 val)
 十六进制输出byte
 putfhex16(uint_16 val)
 十六进制输出word
-
+disk_read(uint_16 cnt, uint_16 addr, uint_16 seg, uint_32 lba)

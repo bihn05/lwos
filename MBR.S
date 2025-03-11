@@ -1,4 +1,4 @@
-org 0x7c00
+[org 0x7c00]
 jmp init
 
 db 0
@@ -14,102 +14,71 @@ dd 0xffffffff			;volume serial number
 db "LWFAT32 "			;file system name
 
 init:
-	sti
-
+	
 	mov ax, 0
 	mov ss, ax
 	mov ds, ax
+	mov es, ax
 	mov sp, 0x7c00
+	mov bp, sp
 
-	call read_disk
+	mov ah, 6
+	mov al, 0
+	mov ch, 0
+	mov cl, 0
+	mov dh, 24
+	mov dl, 79
+	mov bh, 0x07
+	int 0x10
 
-success:
-	mov si, boot_success
+	mov ah, 2
+	mov dx, 0
+	mov bh, 0
+	int 0x10
+
+	mov si, str1
 	call print
+	
+	mov ah, 0
+	mov dl, 0x80
+	int 0x13
+	jc disk_err
+
+	mov ah, 0x02
+	mov al, 0x10 ;sctmnt
+	mov ch, 0x00 ;cylinder
+	mov cl, 0x0f ;sector
+	mov dh, 0x04 ;head
+	mov dl, 0x80 ;device
+	mov bx, 0x700 ;[es:bx]
+	int 0x13
+	jc disk_err
 
 	jmp 0x700
 
-read_disk:
-	mov dx, 0x1f2
-	mov al, 2
-	out dx, al
+	jmp $
 
-	mov dx, 0x1f3
-	mov al, 0x0a
-	out dx, al
-
-	mov dx, 0x1f4
-	mov al, 0x01
-	out dx, al
-
-	mov dx, 0x1f5
-	mov al, 0x00
-	out dx, al
-
-	mov dx, 0x1f6
-	mov al, 0xe0
-	out dx, al
-
-	mov dx, 0x1f7
-	mov al, 0x20
-	out dx, al
-
-.not_ready:
-	nop
-	nop
-	nop
-	in al, dx
-	and al, 0x88
-	cmp al, 0x08
-	jnz .not_ready
-
-	mov ax, 0x200
-	mov cx, ax
-	mov dx, 0x1f0
-	mov bx, 0x700
-.go_on_read:
-	in ax, dx
-	mov [ds:bx], ax
-	add bx, 2
-	loop .go_on_read
-	mov dx, 0x1f7
-	mov al, 0xe7
-	out dx, al
-	mov dx, 0x1f6
-	mov al, 0xa0
-	out dx, al
-
-	mov dx, 0x3f6
-	mov al, 4
-	out dx, al
-	ret
-
-
-error:
-	mov si, boot_failed
+disk_err:
+	mov si, str2
 	call print
-	.halt:
 	hlt
-	jmp .halt
-	
+
 print:
-	mov al, [si]
-	add si, 1
-	cmp al, 0
-	je .rtn
-	mov ah, 0x0e
-	mov bx, 0x0f
-	int 0x10
-	jmp print
-	.rtn:
-	ret
-	
-boot_success:
-	db "Loading", 0
-boot_failed:
-	db "Bad media", 0
-error_count:
-	dw 0
+.L1:
+    mov al, [si]
+	inc si
+    cmp al, 0 
+    je .done  
+    mov ah, 0x0e
+    int 0x10
+    jmp .L1
+.done:
+    ret
+
+str1:
+db "MBR IS WORKING WELL", 0xd, 0xa, 0
+str2:
+db "DISK ERROR OCURRED", 0xd, 0xa, 0
 
 	times 510-($-$$) db 0
 	dw 0xaa55
