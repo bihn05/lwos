@@ -1,4 +1,7 @@
-#ifndef LWOS_H
-#define LWOS_H
+#include <lwos.h>
 
-#endif
+int a = LWOS_MAGIC;
+
+void kernel_init() {
+;
+}
