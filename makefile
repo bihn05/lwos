@@ -29,14 +29,14 @@ system.bin: ./KERNEL/kernel.bin
 system.map: ./KERNEL/kernel.bin
 	nm $< | sort > $@
 
-master.img: MBR.BIN FAT.BIN FDT.BIN WHEEL.BIN BASFNT.FNT LWLDR.BIN system.bin system.map
+master.img: MBR.BIN FAT.BIN FDT.BIN WHEEL.BIN BASFNT.FNT system.bin system.map
 	cp img.img master.img
 	dd if=MBR.BIN of=master.img bs=512 seek=0 count=1 conv=notrunc
 	dd if=FAT.BIN of=master.img bs=512 seek=1 count=128 conv=notrunc
 	dd if=FDT.BIN of=master.img bs=512 seek=129 count=128 conv=notrunc
 	dd if=WHEEL.BIN of=master.img bs=512 seek=257 count=1 conv=notrunc
 	dd if=BASFNT.FNT of=master.img bs=512 seek=258 count=8 conv=notrunc
-	dd if=LWLDR.BIN of=master.img bs=512 seek=266 count=4 conv=notrunc
+	# dd if=LWLDR.BIN of=master.img bs=512 seek=266 count=4 conv=notrunc
 	dd if=system.bin of=master.img bs=512 seek=270 count=64 conv=notrunc
 
 test: ./master.img
