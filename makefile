@@ -9,7 +9,7 @@ CFLAGS+= -nostdlib
 CFLAGS+= -fno-stack-protector
 CFLAGS:=$(strip ${CFLAGS})
 
-INCLUDE:=-I./KERNEL/lib
+INCLUDE:=-I./KERNEL
 
 %.BIN: %.S
 	nasm -f bin $< -o $@
