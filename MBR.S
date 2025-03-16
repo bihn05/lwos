@@ -46,7 +46,7 @@ init:
 	jc disk_err
 
 	mov ah, 0x02
-	mov al, 0x40 ;sctmnt
+	mov al, 0x80 ;sctmnt
 	mov ch, 0x00 ;cylinder
 	mov cl, 0x13 ;sector
 	mov dh, 0x04 ;head
@@ -142,7 +142,7 @@ setup_page:
 
 	xchg bx, bx
 
-	jmp 0x08:0x70000
+	jmp 0x70000
 gdt_start:
 	;nul
 	dd 0x00000000
