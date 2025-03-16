@@ -3,8 +3,7 @@ echo off
 :st
 echo ---------------------Clean Stage
 
-del /q master.img
-del /q *.bin
+clean
 
 echo ---------------------Base System
 :com
