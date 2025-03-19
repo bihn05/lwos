@@ -15,14 +15,6 @@
 #define VGA_AC_DATA_PORT	0x3C0
 #define VGA_INSTAT_READ		0x3DA
 
-void SetWritePlane(unsigned char mask) {
-	outb(0x2, VGA_SEQ_INDEX_PORT);
-	outb(mask, VGA_SEQ_DATA_PORT);
-}
-void ReadPlane(unsigned char pln) {
-	;
-}
-
 unsigned char g_640x480x2[] =
 {
 /* MISC */
@@ -42,6 +34,26 @@ unsigned char g_640x480x2[] =
 	0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
 	0x01, 0x00, 0x0F, 0x00, 0x00
 };
+unsigned char g_640x480x16[] =
+{
+	/* MISC */
+	0xE3,
+	/* SEQ */
+	0x03, 0x01, 0x0f, 0x00, 0x06,
+	/* CRTC */
+	0x5F, 0x4F, 0x50, 0x82, 0x54, 0x80, 0x0B, 0x3E,
+	0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xEA, 0x0C, 0xDF, 0x28, 0x00, 0xE7, 0x04, 0xE3,
+	0xFF,
+	/* GC */
+	0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x05, 0x0F,
+	0xFF,
+	/* AC */
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+	0x01, 0x00, 0x0F, 0x00, 0x00
+};
+
 
 void writereg_video(uint8_t * regs) {
 	uint16_t i;
@@ -77,8 +89,6 @@ void writereg_video(uint8_t * regs) {
 	outb(0x20, VGA_AC_INDEX_PORT);
 }
 
-unsigned int CursorX;
-unsigned int CursorY;
 static unsigned char g_8x8_font[2048] =
 {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -338,10 +348,53 @@ static unsigned char g_8x8_font[2048] =
 	0x00, 0x00, 0x3C, 0x3C, 0x3C, 0x3C, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+unsigned int CursorX;
+unsigned int CursorY;
 char* video = (char*)0xa0000;
+unsigned char ColorAttr;
+void cleardevice() {
+	for (int ii = 0; ii < 4; ii++) {
+		outb(0x04, VGA_GC_INDEX_PORT);
+		outb(ii, VGA_GC_DATA_PORT);
+		for (int i = 0; i < 43200; i++) {
+			video[i] = 0;
+		}
+//		outb(0x02, VGA_SEQ_INDEX_PORT);
+//		outb(0x01 << ii, VGA_SEQ_DATA_PORT);
+	}
+}
+void ScreenScroll() {
+	for (int ii = 0; ii < 4; ii++) {
+		outb(0x04, VGA_GC_INDEX_PORT);
+		outb(ii, VGA_GC_DATA_PORT);
+		memcpy((char*)0xa0000, (char*)(0xa0000 + 80 * 8), 43200 - 80 * 8);
+	}
+}
 void drawfont(char ch) {
-	for (int i=0; i<8; i++) {
-		video[CursorX + 80*(CursorY*8+i)] = g_8x8_font[ch*8 + i];
+	unsigned char foremask, backmask;
+	for (int ii = 0; ii < 4; ii++) {
+		outb(0x04, VGA_GC_INDEX_PORT);
+		outb(ii, VGA_GC_DATA_PORT);
+		outb(0x02, VGA_SEQ_INDEX_PORT);
+		outb(0x01 << ii, VGA_SEQ_DATA_PORT);
+		for (int i = 0; i < 8; i++) {
+			if ((ColorAttr & (0x10 << ii)) == (0x10 << ii)) {
+				backmask = ~g_8x8_font[ch * 8 + i];
+//				backmask = 0;
+			}
+			else {
+//				backmask = ~g_8x8_font[ch * 8 + i];
+				backmask = 0;
+			}
+			if ((ColorAttr & (0x01 << ii)) == (0x01 << ii)) {
+				foremask = g_8x8_font[ch * 8 + i];
+			}
+			else {
+//				foremask = ~g_8x8_font[ch * 8 + i];
+				foremask = 0;
+			}
+			video[CursorX + 80 * (CursorY * 8 + i)] = backmask | foremask;
+		}
 	}
 }
 void putchar(char ch) {
@@ -353,7 +406,8 @@ void putchar(char ch) {
 	if ((ch == 0xd)||(ch == 0xa)) {
 		CursorY++;
 		if (CursorY >= 60) {
-			memcpy((char*)0xa0000, (char*)(0xa0000+80*8), 43200-80*8);
+//			memcpy((char*)0xa0000, (char*)(0xa0000+80*8), 43200-80*8);
+			ScreenScroll();
 			CursorY = 59;
 		}
 		CursorX = 0;

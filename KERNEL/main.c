@@ -8,6 +8,7 @@
 #include <mem.h>
 #include <assert.h>
 #include <vsprintf.h>
+//#include <global.h>
 
 int magic = LWOS_MAGIC;
 char message[] = "ITS WORKING.\nkk";
@@ -15,13 +16,20 @@ PCI_HEADER pci_header;
 PCI_HEADER pci_hd_display;
 PCI_POS pci_display;
 void kernel_init() {
-	writereg_video(g_640x480x2);
-	memset((char*)0xa0000, 0, 43200);
-	outstr("### === !!! Wellcum to LWOS Kernel !!! === ###\n");
-
-	for (int i = 0; i < 10; i++) {
-		printk("Hello! %d\n", i);
+	writereg_video(g_640x480x16);
+	cleardevice();
+	for (int i = 0; i < 16; i++) {
+		for (int j = 0; j < 16; j++) {
+			ColorAttr = j + i * 16;
+			iouthex8(ColorAttr);
+			outstr(" ");
+		}
+		outstr("\n");
 	}
+
+	uint64_t test = 0;
+//	InitDescriptor(&test, 0, 0xfffff);
+//	iouthex64(test);
 
 //	InitKB();
 
