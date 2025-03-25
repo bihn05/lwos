@@ -20,61 +20,70 @@
 #define USER_CODE_SELECTOR (USER_CODE_IDX << 3 | 0b11)
 #define USER_DATA_SELECTOR (USER_DATA_IDX << 3 | 0b11)
 
-typedef struct TSS {
-    uint32_t lastlink; // 前一个任务的链接，保存了前一个任状态段的段选择子
-    uint32_t esp0;     // ring0 的栈顶地址
-    uint32_t ss0;      // ring0 的栈段选择子
-    uint32_t esp1;     // ring1 的栈顶地址
-    uint32_t ss1;      // ring1 的栈段选择子
-    uint32_t esp2;     // ring2 的栈顶地址
-    uint32_t ss2;      // ring2 的栈段选择子
-    uint32_t cr3;
-    uint32_t eip;
-    uint32_t flags;
-    uint32_t eax;
-    uint32_t ecx;
-    uint32_t edx;
-    uint32_t ebx;
-    uint32_t esp;
-    uint32_t ebp;
-    uint32_t esi;
-    uint32_t edi;
-    uint32_t es;
-    uint32_t cs;
-    uint32_t ss;
-    uint32_t ds;
-    uint32_t fs;
-    uint32_t gs;
-    uint32_t ldtr;          // 局部描述符选择子
-    uint16_t trace : 1;     // 如果置位，任务切换时将引发一个调试异常
-    uint16_t reversed : 15; // 保留不用
-    uint16_t iobase;        // I/O 位图基地址，16 位从 TSS 到 IO 权限位图的偏移
-    uint32_t ssp;           // 任务影子栈指针
-} _packed TSS;
+#pragma pack(1)
+struct descriptor_t {
+    uint16_t limit_low : 16;
+    uint16_t base_low : 16;
+    uint8_t base_mid : 8;
+    uint8_t type : 4;
+    uint8_t segment : 1;
+    uint8_t dpl : 2;
+    uint8_t present : 1;
+    uint8_t limit_high : 4;
+    uint8_t available : 1;
+    uint8_t long_mode : 1;
+    uint8_t big : 1;
+    uint8_t granularity : 1;
+    uint8_t base_high : 8;
+};
+struct pointer_t {
+    uint16_t limit;
+    uint32_t base;
+};
+struct pointer_t gdt_ptr;
 
-uint64_t gdt[GDT_SIZE];
-uint64_t pointer;
-TSS tss;
-
+struct descriptor_t gdt[GDT_SIZE];
 //Init Descriptor but limit grnd 4kb
-void InitDescriptor(uint64_t* desc, uint32_t base, uint32_t limit) {
-    uint64_t tmp1, tmp2;
-    tmp1 = base & 0xff000000;
-    tmp2 = limit & 0xf0000;
-    tmp1 = tmp1 + tmp2;
-    tmp2 = base & 0xff0000;
-    tmp2 = tmp2 >> 16;
-    tmp1 = tmp1 + tmp2;
-    tmp1 = tmp1 << 16;
-    tmp2 = base & 0xffff;
-    tmp1 = tmp1 + tmp2;
-    tmp1 = tmp1 << 16;
-    tmp2 = limit & 0xffff;
-    tmp1 = tmp1 + tmp2;
-    *desc = tmp1;
+void InitDescriptor(struct descriptor_t* d, uint32_t base, uint32_t limit) {
+    d->base_low = base * 0xffff;
+    d->base_mid = (base >> 16) & 0xff;
+    d->base_high = (base >> 24) & 0xff;
+    d->limit_low = limit & 0xffff;
+    d->limit_high = (limit >> 16) & 0xf;
 }
+
 void InitGDT() {
-    asm volatile("lgdt %0" : : "m"(pointer));
+    memset(gdt, 0, sizeof(gdt));
+
+    struct descriptor_t* desc;
+    desc = gdt + KERNEL_CODE_IDX;
+    InitDescriptor(desc, 0, 0xfffff);
+    desc->segment = 1;
+    desc->granularity = 1;
+    desc->big = 1;
+    desc->long_mode = 0;
+    desc->present = 1;
+    desc->dpl = 0;
+    desc->type = 0xa;
+
+    desc = gdt + KERNEL_DATA_IDX;
+    InitDescriptor(desc, 0, 0xfffff);
+    desc->segment = 1;
+    desc->granularity = 1;
+    desc->big = 1;
+    desc->long_mode = 0;
+    desc->present = 1;
+    desc->dpl = 0;
+    desc->type = 0x2;
+
+    gdt_ptr.base = (uint32_t)&gdt;
+    gdt_ptr.limit = sizeof(gdt) - 1;
+
+    asm volatile(
+        "lgdt %0\n"
+        :
+        : "m"(gdt_ptr)
+        );
 }
 
 void InitTSS() {

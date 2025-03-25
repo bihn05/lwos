@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <pristdio.h>
 
-typedef struct PDE {
+#pragma pack(1)
+struct PDE {
     uint32_t present : 1;  // 页表是否存在于内存中
     uint32_t read_write : 1;  // 0 = 只读, 1 = 可读可写
     uint32_t user_supervisor : 1;  // 0 = 超级用户, 1 = 普通用户
@@ -16,8 +17,8 @@ typedef struct PDE {
     uint32_t global : 1;  // 0 = 非全局, 1 = 全局（仅适用于PTE）
     uint32_t available : 3;  // 操作系统可用位
     uint32_t page_table_base : 20; // 页表基地址（物理地址的高20位）
-} PDE ;
-typedef struct PTE {
+};
+struct PTE {
     uint32_t present : 1;  // 页帧是否存在于内存中
     uint32_t read_write : 1;  // 0 = 只读, 1 = 可读可写
     uint32_t user_supervisor : 1;  // 0 = 超级用户, 1 = 普通用户
@@ -29,13 +30,14 @@ typedef struct PTE {
     uint32_t global : 1;  // 0 = 非全局, 1 = 全局
     uint32_t available : 3;  // 操作系统可用位
     uint32_t page_frame_base : 20; // 页帧基地址（物理地址的高20位）
-} PTE;
-uint32_t* pg_base = (uint32_t*)0x100000;
+};
+struct PDE* pg_base = (uint32_t*)0x100000;
 uint32_t pd_free() {
-    for (int i = 0; i < 1024; i++) {
-        if ((pg_base[i] & 0x1) == 0x1) {
-            return 0x100000 + i * 4;
+    for (int i = 0; i < 1024;) {
+        if (pg_base[i].present != 1) {
+            return i;
         }
+        i++;
     }
     return 0;
 }

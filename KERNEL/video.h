@@ -367,10 +367,15 @@ void ScreenScroll() {
 	for (int ii = 0; ii < 4; ii++) {
 		outb(0x04, VGA_GC_INDEX_PORT);
 		outb(ii, VGA_GC_DATA_PORT);
-		memcpy((char*)0xa0000, (char*)(0xa0000 + 80 * 8), 43200 - 80 * 8);
+		for (int i = 0; i < 42560; i++) {
+			video[i] = video[i+640];
+		}
+		outb(0x02, VGA_SEQ_INDEX_PORT);
+		outb(0x01 << ii, VGA_SEQ_DATA_PORT);
+//		memcpy((char*)0xa0000, (char*)(0xa0000 + 80 * 8), 43200 - 80 * 8);
 	}
 }
-void drawfont(char ch) {
+void drawfont(unsigned int ch) {
 	unsigned char foremask, backmask;
 	for (int ii = 0; ii < 4; ii++) {
 		outb(0x04, VGA_GC_INDEX_PORT);
@@ -379,7 +384,8 @@ void drawfont(char ch) {
 		outb(0x01 << ii, VGA_SEQ_DATA_PORT);
 		for (int i = 0; i < 8; i++) {
 			if ((ColorAttr & (0x10 << ii)) == (0x10 << ii)) {
-				backmask = ~g_8x8_font[ch * 8 + i];
+				backmask = g_8x8_font[ch * 8 + i];
+				backmask ^= 0xff;
 //				backmask = 0;
 			}
 			else {
