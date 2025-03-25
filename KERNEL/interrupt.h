@@ -28,7 +28,7 @@ void interrupt_init() {
 	for (size_t i = 0; i < IDT_SIZE; i++) {
 		gate_t* gate = &idt[i];
 		gate->offset0 = (uint32_t)interrupt_handler & 0xffff;
-		gate->offset1 = (uint32_t)(interrupt_handler>>16) & 0xffff;
+		gate->offset1 = (uint32_t)(interrupt_handler >>16) & 0xffff;
 		gate->selector = 0x08;
 		gate->reserved = 0;
 		gate->type = 0xe;
