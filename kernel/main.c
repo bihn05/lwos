@@ -1,22 +1,12 @@
 #include <lwos.h>
-#include <stdint.h>
+#include <type.h>
 #include <video.h>
-#include <string.h>
-#include <pristdio.h>
-#include <kb.h>
-//#include <pci.h>
-#include <videocard.h>
-#include <mem.h>
-#include <assert.h>
 #include <vsprintf.h>
-#include <global.h>
-#include <task.h>
+#include <gd.h>
+#include <memory.h>
+#include <interrupt.h>
 
 int magic = LWOS_MAGIC;
-char message[] = "ITS WORKING.\nkk";
-PCI_HEADER pci_header;
-PCI_HEADER pci_hd_display;
-PCI_POS pci_display;
 void kernel_init() {
 	writereg_video(g_640x480x16);
 	cleardevice();
@@ -25,6 +15,14 @@ void kernel_init() {
 	for (int i = 0; i < 4800; i++)outstr(" ");
 	CursorX = CursorY = 0;
 	printk("Welcome to LWOS Kernel!!!\n");
+
 	InitGDT();
-	task_init();
+
+//	printk("Available Memory = %d KB\n", total_mem() >> 10);
+
+	interrupt_init();
+
+	memory_init();
+	memory_map_init();
+	mapping_init();
 }

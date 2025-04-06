@@ -1,7 +1,10 @@
+#ifndef _VSPRINTF_H
+#define _VSPRINTF_H
+
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
-#include <stdint.h>
+#include <type.h>
 
 #define ZEROPAD 0x01
 #define SIGN 0x02
@@ -381,3 +384,5 @@ int sprintf(char* buf, const char* fmt, ...)
     va_end(args);
     return i;
 }
+
+#endif

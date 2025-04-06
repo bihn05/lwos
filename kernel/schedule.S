@@ -1,25 +1,27 @@
 [bits 32]
 
-_task_switch:
-	push ebp
-	mov ebp, esp
+section .text
 
-	push ebx
-	push esi
-	push edi
+global task_switch
+task_switch:
+    push ebp
+    mov ebp, esp
 
-	mov eax, esp
-	and eax, 0xfffff000
+    push ebx
+    push esi
+    push edi
 
-	mov [eax], esp
+    mov eax, esp;
+    and eax, 0xfffff000; current
 
-	mov eax, [ebp+8]
-	mov esp, [eax]
+    mov [eax], esp
 
-	pop edi
-	pop esi
-	pop ebx
-	pop ebp
+    mov eax, [ebp + 8]; next
+    mov esp, [eax]
 
-	ret
-global _task_switch
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
+    ret

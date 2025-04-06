@@ -2,7 +2,7 @@
 #define _PRIMARY_STDIO_H_
 
 #include <video.h>
-#include <stdint.h>
+#include <type.h>
 #include <stdarg.h>
 
 const char _STRHEX[17]="0123456789ABCDEF";

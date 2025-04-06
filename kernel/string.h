@@ -1,7 +1,7 @@
 #ifndef _STRING_H
 #define _STRING_H
 
-#include <stdint.h>
+#include <type.h>
 #include <assert.h>
 
 char* strcpy(char* dest, const char* src)

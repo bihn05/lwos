@@ -1,7 +1,7 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include <stdint.h>
+#include <type.h>
 
 void outb(uint8_t value, uint16_t port) {
 	asm volatile ("outb %b0, %w1" : : "a"(value), "d"(port));

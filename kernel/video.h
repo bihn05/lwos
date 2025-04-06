@@ -2,7 +2,7 @@
 #define VIDEO_H
 
 #include <port.h>
-#include <stdint.h>
+#include <type.h>
 
 #define VGA_MISC_PORT		0x3C2
 #define VGA_SEQ_INDEX_PORT	0x3C4

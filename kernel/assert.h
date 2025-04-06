@@ -2,9 +2,15 @@
 #define _ASSERT_H
 
 #include <pristdio.h>
-#include <stdint.h>
+#include <type.h>
 #include <stdarg.h>
-
+// 强制阻塞
+static void spin(char* name)
+{
+	printk("spinning in %s ...\n", name);
+	while (true)
+		;
+}
 static void block(char* name) {
 	outstr("Block in ");
 	outstr(name);
@@ -26,8 +32,13 @@ void assertion_failure(char* exp, char* file, char* base, int line) {
 
 #define assert(exp); if(exp);else assertion_failure(#exp, __FILE__, __BASE_FILE__, __LINE__);
 
-void panic(const char* fmt, ...) {
-	;
+void panic()
+{
+
+	spin("panic()");
+
+	// 不可能走到这里，否则出错；
+	asm volatile("ud2");
 }
 
 #endif
