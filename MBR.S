@@ -18,24 +18,8 @@ init:
 	mov ax, 0
 	mov ss, ax
 	mov ds, ax
-	mov ax, 0x7000
-	mov es, ax
 	mov sp, 0x7c00
 	mov bp, sp
-
-	mov ah, 6
-	mov al, 0
-	mov ch, 0
-	mov cl, 0
-	mov dh, 24
-	mov dl, 79
-	mov bh, 0x07
-	int 0x10
-
-	mov ah, 2
-	mov dx, 0
-	mov bh, 0
-	int 0x10
 
 	mov si, str1
 	call print
@@ -45,20 +29,42 @@ init:
 	int 0x13
 	jc disk_err
 
+	mov ax, 0x7000
+	mov es, ax
 	mov ah, 0x02
-	mov al, 0x80 ;sctmnt
+	mov al, 0x60 ;sctmnt
 	mov ch, 0x00 ;cylinder
-	mov cl, 0x13 ;sector
+	mov cl, 0x0a ;sector
 	mov dh, 0x04 ;head
 	mov dl, 0x80 ;device
 	mov bx, 0x00 ;[es:bx]
 	int 0x13
 	jc disk_err
 
-	jmp cnt
+detect_mem:
+	xor ebx, ebx
+	mov es, bx
+	mov edi, 0x7e10 ; es:di struct buffer ptr
+	mov edx, 0x534d4150
+
+.next:
+	mov eax, 0xe820
+	mov ecx, 24
+	int 0x15
+	jc mem_err
+	add di, cx
+	inc word [0x7e00]
+	cmp ebx, 0
+	jnz .next
+
+	call cnt
 	
 disk_err:
 	mov si, str2
+	call print
+	hlt
+mem_err:
+	mov si, str3
 	call print
 	hlt
 print:
@@ -105,7 +111,7 @@ setup_page:
 	mov dword [edi], eax
 	add edi, 4
 	loop .L1
-	
+
 	mov eax, 0x00100007
 	mov dword [0x100ffc], eax
 	add eax, 0x1000
@@ -131,18 +137,12 @@ setup_page:
 	mov eax, cr3
 	mov cr3, eax
 
-	mov dword [0x710 + 0x8], 0x0000ffff ; reset gdt
-	mov dword [0x710 + 0xc], 0x00cf9a00
-	mov dword [0x710 + 0x10], 0x0000ffff
-	mov dword [0x710 + 0x14], 0x00cf9200
-	mov word [0x700], 0x17
-	mov dword [0x702], 0x710
-
-	lgdt [0x700]
+	lgdt [gdt_descriptor]
 
 	xchg bx, bx
 
-	jmp 0x70000
+	jmp 0x70000 ; to
+
 gdt_start:
 	;nul
 	dd 0x00000000
@@ -160,13 +160,13 @@ gdt_end:
 gdt_descriptor:
 	dw gdt_end - gdt_start - 1
 	dd gdt_start
-	
-
 
 str1:
 db "MBR IS WORKING WELL", 0xd, 0xa, 0
 str2:
-db "DISK ERROR OCURRED", 0xd, 0xa, 0
+db "MEDIA ERR", 0xd, 0xa, 0
+str3:
+db "MEM ERR", 0xd, 0xa, 0
 
 	times 510-($-$$) db 0
 	dw 0xaa55

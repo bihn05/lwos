@@ -15,16 +15,17 @@ echo ---------------------Base System
 nasm -f bin MBR.S -o MBR.BIN
 nasm -f bin FAT.S -o FAT.BIN
 nasm -f bin FDT.S -o FDT.BIN
+nasm -f bin MEM.S -o MEM.BIN
 cd KERNEL
 nasm -f elf32 START.S -o START.o
+nasm -f elf32 irhd.S -o irhd.o
 nasm -f elf32 schedule.S -o schedule.o
-nasm -f win32 handler.S -o handler.o
-gcc -m32 -Wimplicit-function-declaration -fno-builtin -ffreestanding -nodefaultlibs -nostdinc -nostdlib -fno-pic -fno-pie -fno-stack-protector -I. -c main.c -o main.o
-ld -m i386pe -static -o ./kernel.bin START.o handler.o schedule.o main.o -Ttext 0x70000 -L"./"
-::gcc -m32 -static -o kernel.bin main.o START.o schedule.o -Ttext 0x70000 -nostdlib
+gcc -m32 -Wimplicit-function-declaration -w -fno-builtin -ffreestanding -nodefaultlibs -nostdinc -nostdlib -fno-pic -fno-pie -fno-stack-protector -I. -c main.c -o main.o
+ld -m i386pe -static -o ./kernel.bin START.o irhd.o schedule.o main.o -Ttext 0x70000 -L"./"
+
 cd..
-objcopy -O binary ./KERNEL/kernel.bin system.bin
-nm ./KERNEL/kernel.bin | sort > system.map
+objcopy -O binary ./kernel/kernel.bin system.bin
+nm ./kernel/kernel.bin | sort > system.map
 
 set /p cs=Continue , Failed or Retry? (c/f/r)
 if /i "%cs%" == "r" (
@@ -42,9 +43,8 @@ copy img.img master.img
 dd bs=512 count=1 seek=0 if=MBR.BIN of=master.img
 dd bs=512 count=128 seek=1 if=FAT.BIN of=master.img
 dd bs=512 count=128 seek=129 if=FDT.BIN of=master.img
-dd bs=512 count=1 seek=257 if=WHEEL.BI_ of=master.img
-dd bs=512 count=8 seek=258 if=BASFNT.FNT of=master.img
-dd bs=512 count=128 seek=270 if=system.bin of=master.img
+dd bs=512 count=4 seek=133 if=MEM.BIN of=master.img
+dd bs=512 count=128 seek=261 if=system.bin of=master.img
 
 echo ---------------------Power On
 

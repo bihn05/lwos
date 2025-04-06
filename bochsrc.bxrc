@@ -3,7 +3,7 @@ plugin_ctrl: voodoo=false, unmapped=true, biosdev=true, speaker=true, extfpuirq=
 config_interface: win32config
 display_library: win32
 magic_break: enabled=1
-memory: host=1, guest=1
+memory: host=32, guest=32
 romimage: file="C:\Program Files\Bochs-2.7/BIOS-bochs-latest", address=0x00000000, options=none
 vgaromimage: file="C:\Program Files\Bochs-2.7/VGABIOS-lgpl-latest"
 boot: disk
