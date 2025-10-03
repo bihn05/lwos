@@ -369,6 +369,10 @@ void putchar(char ch) {
 	if (CursorX >= 80) {
 		CursorX = 0;
 		CursorY++;
+		if (CursorY >= 30) {
+			screen_scroll();
+			CursorY = 29;
+		}
 	}
 }
 void outstr(const char* str) {
