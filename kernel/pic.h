@@ -26,30 +26,25 @@
  * 初始化PIC
  * 将IRQ 0-15 映射到中断向量 32-47
  */
-void pic_init(void) {
-    // 保存当前的掩码
-    uint8_t a1 = inb(PIC1_DATA_PORT);
-    uint8_t a2 = inb(PIC2_DATA_PORT);
-
+void vpic_init(void) {
     // 开始初始化序列
-    outb(PIC1_CMD_PORT, ICW1_INIT | ICW1_ICW4);
-    outb(PIC2_CMD_PORT, ICW1_INIT | ICW1_ICW4);
-
+    outb(ICW1_INIT | ICW1_ICW4, PIC1_CMD_PORT);
+    outb(ICW1_INIT | ICW1_ICW4, PIC2_CMD_PORT);
+         
     // 设置中断向量偏移
-    outb(PIC1_DATA_PORT, 32);  // 主PIC映射到32-39
-    outb(PIC2_DATA_PORT, 40);  // 从PIC映射到40-47
+    outb(32, PIC1_DATA_PORT);  // 主PIC映射到32-39
+    outb(40, PIC2_DATA_PORT);  // 从PIC映射到40-47
 
     // 告诉主PIC从PIC在IRQ2
-    outb(PIC1_DATA_PORT, 4);   // IRQ2连接从PIC
-    outb(PIC2_DATA_PORT, 2);   // 从PIC的级联身份
+    outb(4, PIC1_DATA_PORT);   // IRQ2连接从PIC
+    outb(2, PIC2_DATA_PORT);   // 从PIC的级联身份
 
     // 设置8086模式
-    outb(PIC1_DATA_PORT, ICW4_8086);
-    outb(PIC2_DATA_PORT, ICW4_8086);
+    outb(ICW4_8086, PIC1_DATA_PORT);
+    outb(ICW4_8086, PIC2_DATA_PORT);
 
-    // 恢复保存的掩码
-    outb(PIC1_DATA_PORT, a1);
-    outb(PIC2_DATA_PORT, a2);
+    outb(0xff, PIC1_DATA_PORT);
+    outb(0xff, PIC2_DATA_PORT);
 
     printk("PIC initialized: IRQ0-7 -> INT 32-39, IRQ8-15 -> INT 40-47\n");
 }
@@ -59,9 +54,36 @@ void pic_init(void) {
  */
 void send_eoi(uint8_t irq_num) {
     if (irq_num >= 8) {
-        outb(PIC2_CMD_PORT, 0x20); // 发送EOI到从PIC
+        outb(0x20, PIC2_CMD_PORT); // 发送EOI到从PIC
     }
-    outb(PIC1_CMD_PORT, 0x20);     // 发送EOI到主PIC
+    outb(0x20, PIC1_CMD_PORT);     // 发送EOI到主PIC
+}
+void IRQ_set_mask(uint8_t IRQline) {
+    uint16_t port;
+    uint8_t value;
+
+    if(IRQline < 8) {
+        port = PIC1_DATA_PORT;
+    } else {
+        port = PIC2_DATA_PORT;
+        IRQline -= 8;
+    }
+    value = inb(port) | (1 << IRQline);
+    outb(value, port);        
+}
+void IRQ_clear_mask(uint8_t IRQline) {
+    uint16_t port;
+    uint8_t value;
+
+    if (IRQline < 8) {
+        port = PIC1_DATA_PORT;
+    }
+    else {
+        port = PIC2_DATA_PORT;
+        IRQline -= 8;
+    }
+    value = inb(port) & ~(1 << IRQline);
+    outb(value, port);
 }
 
 #endif

@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#define GDT_ENTRIES 6
+#define GDT_ENTRIES 5
 
 // GDT 访问权限位
 #define GDT_ACCESS_PRESENT      0x80
