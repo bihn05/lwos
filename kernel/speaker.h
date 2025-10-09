@@ -22,7 +22,7 @@ void disable_spk() {
 }
 void set_spk_freq(uint16_t freq) {
 	uint16_t reload_value = PIT_BASE_FREQ / freq;
-
+	printk("BEEP @%dHz\n", freq);
 	outb(0xb6, PIT_CTRL);
 	outb(reload_value & 0xFF, PIT_CH2);
 	outb((reload_value >> 8) & 0xFF, PIT_CH2);

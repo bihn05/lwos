@@ -2,29 +2,22 @@
 #define _CONIO_H
 
 #include <driver/kbc.h>
+#include <stdint.h>
 
-char getch() {
-	while (kbd.count == 0) {
-		;
-		//asm volatile("hlt");
+char getch(void) {
+	while (kb_buffer_is_emtpy(&kbd_buffer)) {
+		__asm volatile("nop");
 	}
-	return get_char_buffer();
+	return buffer_get(&kbd_buffer);
 }
-char getch_nb() {
-	if (kbd.count == 0) {
-		return 0;
+int try_getch(void) {
+	if (kb_buffer_is_emtpy(&kbd_buffer)) {
+		return -1;
 	}
-	return get_char_buffer();
+	return (int)buffer_get(&kbd_buffer);
 }
-uint8_t getsc() {
-	while (kbd.sc_count == 0) {
-		asm volatile("hlt");
-	}
-	return get_scancode_buffer();
-}
-void flush_keyboard() {
-	kbd.head = kbd.tail = kbd.count = 0;
-	kbd.sc_head = kbd.sc_tail = kbd.sc_count = 0;
+bool kbhit(void) {
+	return !kb_buffer_is_emtpy(&kbd_buffer);
 }
 
 #endif

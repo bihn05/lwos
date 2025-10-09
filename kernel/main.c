@@ -3,11 +3,22 @@
 #include <descript.h>
 #include <driver/ata.h>
 #include <driver/kbc.h>
+#include <driver/acpi.h>
 #include <timer.h>
 #include <mem.h>
 #include <string.h>
 #include <debug.h>
 #include <speaker.h>
+#include <driver/graphics.h>
+#include <fsys/lwfs.h>
+#include <mm/vmm.h>
+
+#include <conio.h>
+#include <sdbg/superdebug.h>
+
+char testy[256];
+
+
 void display_banner() {
 	printk(" ___       ___       __   ________  ________      \n");
 	printk("|\\  \\     |\\  \\     |\\  \\|\\   __  \\|\\   ____\\     \n");
@@ -24,19 +35,29 @@ void kernel_init() {
 	writereg_video(g_640x480x2);
 	clear_device();
 	display_banner();
-	calc_mem();
 	printk(" i Init GDT\n");
 	gdt_init();
 	printk(" i Init Interrupts\n");
 	idt_init();
+	mmap_init();
 	vpic_init();
 	keyboard_init();
-	pit_init();
+//	pit_init();
 	IRQ_set_mask(0);
-	printk("miao");
 	__asm("sti");
-	set_spk_freq(440);
-	enable_spk();
+	if (!check_acpi_support()) {
+		printk(" * ACPI not supported.\n");
+	}
+//	enable_spk();
+	ata_init();
+	ata_detect_drives();
+	load_mbr();
+	fat_t tet;
+	get_fat_entry(&tet, 0);
+	fat_info(&tet);
+
+	super_dbg();
+
 	bxbp();
 	cheax();
 	while (1);

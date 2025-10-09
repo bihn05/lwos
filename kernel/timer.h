@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <driver/io.h>
 #include <kernel.h>
+#include <speaker.h>
 
 // PIT µÄ I/O ¶Ë¿Ú
 #define PIT_CHANNEL0_DATA 0x40
@@ -25,13 +26,11 @@
 
 #define FREQ_T0 1 // 100 Hz
 int intcnt = 0;
+int cnt2 = 0;
+int melody[3] = { 440, 660, 880 };
+
 extern void timer_hd(void);
 void timer_handler(void) {
-	intcnt++;
-
-	if (intcnt % 1 == 0) {
-		putchar('A');
-	}
 	outb(0x20, 0x20);
 }
 void pit_init(void) {
