@@ -18,15 +18,15 @@ typedef struct {
 	uint8_t jmp_code[3];
 	char filesys_name[8];
 	char reserved[5];
-	uint64_t partition_offset; // ·ÖÇøÆğÊ¼LBA (sct)
-	uint64_t partition_length; // ·ÖÇøÉÈÇøÊı (sct)
-	uint32_t fat_offset; // FATÏà¶ÔÆ«ÒÆÁ¿ (sct)
-	uint32_t fat_length; // FATÉÈÇøÊı (sct)
-	uint32_t cluster_offset; // ´Ø¶ÑÏà¶ÔÆ«ÒÆÁ¿ (sct)
-	uint32_t cluster_count; // ´ØÊı (cst)
-	uint32_t root_cluster; // ¸ùÄ¿Â¼ÆğÊ¼´ØºÅ (cst)
-	uint32_t volume_serial_number; // ¾íĞòÁĞºÅ
-	uint16_t fs_version; // ÎÄ¼şÏµÍ³°æ±¾
+	uint64_t partition_offset; // åˆ†åŒºèµ·å§‹LBA (sct)
+	uint64_t partition_length; // åˆ†åŒºæ‰‡åŒºæ•° (sct)
+	uint32_t fat_offset; // FATç›¸å¯¹åç§»é‡ (sct)
+	uint32_t fat_length; // FATæ‰‡åŒºæ•° (sct)
+	uint32_t cluster_offset; // ç°‡å †ç›¸å¯¹åç§»é‡ (sct)
+	uint32_t cluster_count; // ç°‡æ•° (cst)
+	uint32_t root_cluster; // æ ¹ç›®å½•èµ·å§‹ç°‡å· (cst)
+	uint32_t volume_serial_number; // å·åºåˆ—å·
+	uint16_t fs_version; // æ–‡ä»¶ç³»ç»Ÿç‰ˆæœ¬
 	uint8_t sector_shift; // exp(2, shift)
 	uint8_t clustor_shift; // exp(2, shift)
 	uint8_t flags;
