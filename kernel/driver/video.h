@@ -70,7 +70,7 @@ void writereg_video(uint8_t * regs) {
 	outb(0x20, VGA_AC_INDEX_PORT);
 }
 
-static unsigned char g_8x16_font[4096] =
+static unsigned char g_8x16_font[2048] =
 {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x3C, 0x42, 0x81, 0xE7, 0xA5, 0x99, 0x81, 0x99, 0x42, 0x3C, 0x00, 0x00, 0x00, 0x00,
@@ -339,15 +339,26 @@ void clear_device() {
 	CursorY = 0;
 }
 void screen_scroll() {
-	for (int i = 0; i < 37120; i++)
+	int i = 0;
+	for (; i < 37120; i++)
 		video[i] = video[i + 1280];
-	for (int i = 37120; i < 38400; i++) {
+	for (; i < 38400; i++) {
 		video[i] = 0;
 	}
 }
 void draw_font(unsigned int ch) {
 	for (int i=0;i<16;i++)
 		video[CursorX + 80 * (CursorY * 16 + i)] = g_8x16_font[ch * 16 + i];
+}
+void draw_font_c(unsigned int ch, int color) {
+	if (color == 0) {
+		for (int i = 0; i < 16; i++)
+			video[CursorX + 80 * (CursorY * 16 + i)] = g_8x16_font[ch * 16 + i];
+	}
+	else {
+		for (int i = 0; i < 16; i++)
+			video[CursorX + 80 * (CursorY * 16 + i)] = g_8x16_font[ch * 16 + i] ^ 0xff;
+	}
 }
 void putchar(char ch) {
 	if (ch == '\b') {
@@ -375,9 +386,46 @@ void putchar(char ch) {
 		}
 	}
 }
+void putchar_c(char ch, int c) {
+	if (ch == '\b') {
+		CursorX--;
+		if (CursorX == -1)CursorX = 0;
+		return;
+	}
+	if ((ch == 0xd) || (ch == 0xa)) {
+		CursorY++;
+		if (CursorY >= 30) {
+			screen_scroll();
+			CursorY = 29;
+		}
+		CursorX = 0;
+		return;
+	}
+	draw_font_c(ch, c);
+	CursorX++;
+	if (CursorX >= 80) {
+		CursorX = 0;
+		CursorY++;
+		if (CursorY >= 30) {
+			screen_scroll();
+			CursorY = 29;
+		}
+	}
+}
 void outstr(const char* str) {
 	for (int i=0;str[i]!=0;i++) {
 		putchar(str[i]);
 	}
+}
+void putstr_xy(int x, int y, const char* str, int c) {
+	CursorX = x;
+	CursorY = y;
+	for (int i = 0; str[i] != 0; i++) {
+		putchar_c(str[i], c);
+	}
+}
+void set_cursor(int x, int y) {
+	CursorX = x;
+	CursorY = y;
 }
 #endif
