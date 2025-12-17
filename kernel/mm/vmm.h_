@@ -1,0 +1,431 @@
+#ifndef _VIRTUAL_MEMORY_H
+#define _VIRTUAL_MEMORY_H
+
+#include <stdint.h>
+#include <bitmap.h>
+#include <kernel.h>
+#include <string.h>
+#include <interrupt.h>
+
+#define ARDS_TYPE_USABLE 1
+#define ARDS_TYPE_RESERVED 2
+
+#define PAGE_DIR_BASE 0x100000
+#define PAGE_TABLE_BASE 0x101000
+#define PAGE_SIZE 4096
+
+#define PHMM_USABLE 0
+#define PHMM_OCCUPY 1
+#define PHMM_KERNEL 2
+#define PHMM_INVLID 3
+
+/*
+usable是空闲的可利用内存
+occupy是被用户使用的内存
+kernel是被内核使用的内存
+invlid是被硬件保留不能使用的内存
+*/
+
+char* mmap_src = (char*)0x200000;
+char* page_map_src = (char*)0x240000;
+static bbitmap_t mem_bitmap;
+static bitmap_t page_bitmap;
+uint32_t get_cr2(void);
+uint32_t get_cr3(void);
+void set_cr3(uint32_t pde);
+void int_page_fault_handler(int_registers_t* regs);
+void mm_manage_push(uint32_t addr, uint16_t count, uint16_t flags);
+void mm_manage_pop(void);
+int mm_map(uint32_t addr, uint16_t flags);
+void mmap_init(void);
+void kmalloc(size_t size);
+void kfree(void* ptr);
+extern void tlb_flush_piece(uint32_t address);
+
+#define PAGE_MAGIC 0xdeadbeef
+#pragma pack(push, 1)
+typedef struct {
+	uint64_t base;
+	uint64_t length;
+	uint32_t type;
+} ards_t;
+typedef struct {
+	uint32_t present : 1;  // Page present in memory
+	uint32_t rw : 1;       // Read-only if clear, readwrite if set
+	uint32_t user : 1;     // Supervisor level only if clear
+	uint32_t pwt : 1;      // Page-level write-through
+	uint32_t pcd : 1;      // Page-level cache disable
+	uint32_t accessed : 1; // Has the page been accessed since last refresh?
+	uint32_t dirty : 1;    // Has the page been written to since last refresh?
+	uint32_t pat : 1;      // Page Attribute Table
+	uint32_t global : 1;   // Global page (ignored if CR4.PGE = 0)
+	uint32_t avail : 3;    // Available for software use
+	uint32_t frame : 20;   // Frame address (shifted right 12 bits)
+} PE;
+typedef struct {
+	uint32_t present : 1;	// 存在性
+	uint32_t rw : 1;		// 可读写
+	uint32_t user : 1;		// 用户/系统
+	uint32_t pwt : 1;		// 透写
+	uint32_t pcd : 1;		// 禁用页缓存
+	uint32_t accessed : 1;	// 被访问
+	uint32_t a : 1;			// a
+	uint32_t page_size : 1;	// 0->4KB
+	uint32_t avail : 4;		// 任意用
+	uint32_t address : 20;	// 页表物理地址
+} PDE;
+typedef struct {
+	uint32_t present : 1;	// 存在性
+	uint32_t rw : 1;		// 读写
+	uint32_t user : 1;		// 用户/系统
+	uint32_t pwt : 1;		// 透写
+	uint32_t pcd : 1;		// 禁用页缓存
+	uint32_t accessed : 1;	// 被访问
+	uint32_t dirty : 1;		// 脏页
+	uint32_t pat : 1;		// 页属性
+	uint32_t global : 1;	// 全局
+	uint32_t avail : 3;		// 任意用
+	uint32_t address : 20;	// 映射的物理地址
+} PTE;
+#pragma pack(pop)
+PDE* pdt;
+typedef struct {
+	uint32_t addr;
+	uint16_t count;
+	uint16_t flags;
+} mm_manage_t;
+typedef struct {
+	mm_manage_t* buffer;
+	uint32_t count;
+} mm_manage_ptr_t;
+typedef struct {
+	uint32_t address;
+	uint32_t flags;
+	struct node_t* prev;
+	struct node_t* next;
+} node_t;
+
+#define NODE_FREE		0x00000000 // 未使用的节点
+#define NODE_PRESENT	0x00000001 // 可以使用的节点
+#define NODE_ACCESSED	0x00000002 // 不空闲的节点
+#define NODE_START		0x80000000 // 起始节点
+#define NODE_END		0xC0000000 // 末尾节点
+
+#define NODE_MAX_AMOUNT 65536
+
+node_t* mem_nodes;
+
+// 添加节点
+node_t* node_add(uint32_t address, uint32_t flags, node_t* prev, node_t* next);
+// 添加未连接节点
+node_t* node_add_null(uint32_t address, uint32_t flags);
+// 段长度
+uint32_t node_length(node_t* node);
+// 插入节点
+node_t* node_insert(uint32_t address, uint32_t flags, node_t* prev);
+// 最近空闲节点
+node_t* node_find_top(node_t* node);
+// 可用节点索引
+node_t* node_free();
+// 根据地址返回节点
+node_t* node_address(uint32_t address);
+// 找到符合长度的最近段
+node_t* node_find_fit(uint32_t size, node_t* node);
+// 销毁节点
+void node_destroy(node_t* node);
+
+void node_destroy(node_t* node) {
+	if (node == NULL)return;
+	node_t* prev = node->prev;
+	node_t* next = node->next;
+	prev->next = next;
+	next->prev = prev;
+	node->flags = 0;
+	node->address = 0;
+}
+node_t* node_find_fit(uint32_t size, node_t* node) {
+	node_t* prst = node;
+	while (prst->flags & NODE_END == 0) {
+		while (prst->flags & NODE_ACCESSED) {
+			prst = prst->next;
+		}
+		if (size <= node_length(prst))return prst;
+	}
+	return NULL;
+}
+node_t* node_address(uint32_t address) {
+	node_t* node = &mem_nodes[0];
+	node_t* next = node->next;
+	while (node->flags & NODE_END == 0) {
+		next = node->next;
+		if (is_inside(node->address, next->address, address))return node;
+		node = next;
+	}
+	return NULL;
+}
+node_t* node_find_top(node_t* node) {
+	node_t* nd = node->next;
+	while (nd->flags & NODE_ACCESSED != 0) {
+		if (nd->flags & NODE_END)return NULL;
+		nd = nd->next;
+	}
+	return nd;
+}
+node_t* node_free() {
+	for (int i = 0; i < NODE_MAX_AMOUNT; i++) {
+		if (mem_nodes[i].flags & NODE_PRESENT) {
+			if ((mem_nodes[i].flags & NODE_ACCESSED) == 0)return &mem_nodes[i];
+		}
+	}
+	return NULL;
+}
+node_t* node_add(uint32_t address, uint32_t flags, node_t* prev, node_t* next) {
+	node_t* p = node_free();
+	if (p == NULL)return NULL;
+	p->address = address;
+	p->flags = flags | NODE_PRESENT;
+	p->prev = prev;
+	p->next = next;
+	return p;
+}
+node_t* node_add_null(uint32_t address, uint32_t flags) {
+	node_t* p = node_free();
+	if (p == NULL)return NULL;
+	p->address = address;
+	p->flags = flags | NODE_PRESENT;
+	p->prev = p;
+	p->next = p;
+	return p;
+}
+uint32_t node_length(node_t* node) {
+	node_t* next = node->next;
+	if (node->flags & NODE_END)return;
+	return next->address - node->address;
+}
+node_t* node_insert(uint32_t address, uint32_t flags, node_t* prev) {
+	node_t* next = prev->next;
+	node_t* prst = node_add_null(address, flags);
+	node_t* tmp;
+	tmp = prev->next;
+	prev->next = prst->next;
+	prst->next = tmp;
+	tmp = next->prev;
+	next->prev = prst->prev;
+	prst->prev = tmp;
+	return prst;
+}
+
+mm_manage_ptr_t mm_manage_p;
+#define MM_MAP_PRESENT		0x0001
+#define MM_MAP_KERNEL		0x0000
+#define MM_MAP_USER			0x0002
+#define MM_MAP_DATA			0x0000
+#define MM_MAP_CODE			0x0004
+#define MM_MAP_LV_0			0x0000
+#define MM_MAP_LV_1			0x0010
+#define MM_MAP_LV_2			0x0020
+#define MM_MAP_LV_3			0x0030
+
+typedef struct {
+	size_t page_count;
+	size_t magic;
+} page_header_t;
+
+void mm_manage_push(uint32_t addr, uint16_t count, uint16_t flags) {
+	mm_manage_p.count++;
+	mm_manage_p.buffer[mm_manage_p.count].addr = addr;
+	mm_manage_p.buffer[mm_manage_p.count].count = count;
+	mm_manage_p.buffer[mm_manage_p.count].flags = flags;
+}
+void mm_manage_pop() {
+	mm_manage_p.buffer[mm_manage_p.count].addr = 0;
+	mm_manage_p.buffer[mm_manage_p.count].count = 0;
+	mm_manage_p.buffer[mm_manage_p.count].flags = 0;
+	if (mm_manage_p.count > 0)mm_manage_p.count--;
+}
+void int_page_fault_handler(int_registers_t* regs) {
+	uint16_t cs_sel = (uint16_t)(regs->cs & 0xFFFF);
+	uint32_t problem_addr = get_cr2();
+	uint32_t problem_block = problem_addr & 0xfffff000;
+
+	for (int i = 0; i < mm_manage_p.count; i++) {
+		if (is_inside(mm_manage_p.buffer[i].addr,
+			mm_manage_p.buffer[i].addr + PAGE_SIZE * mm_manage_p.buffer[i].count,
+			problem_block)) {
+			mm_map(problem_block, MM_MAP_PRESENT | MM_MAP_KERNEL | MM_MAP_LV_0);
+			return;
+		}
+	}
+
+	if (cs_sel != 0x08) {
+		printk("USR: SS=0x%02x, ESP=0x%04x\n", (uint16_t)(regs->ss & 0xFFFF), regs->useresp);
+	}
+	else {
+		printk("PANIC: PAGE FAULT\n");
+	}
+	printk("The instruction at 0x%08x referenced memory at 0x%08x. The memory could not be ",
+		regs->eip, problem_addr
+	);
+	if (regs->err_code & 0x04) {
+		printk("read.\n");
+	}
+	else {
+		printk("written.\n");
+	}
+
+	while (1);
+}
+int mm_map(uint32_t addr, uint16_t flags) {
+	uint32_t page_dir_idx = addr >> 22 & 0x3ff;
+	PDE* target_page_dir = (PDE*)(page_dir_idx * 4 + 0x100000);
+	uint32_t page_idx = addr >> 12 & 0x3ff;
+	if (target_page_dir->present == 0) {
+		*(uint32_t*)target_page_dir = 0;
+		target_page_dir->rw = 1;
+		target_page_dir->user = 1;
+		if (bitmap_find_top(&page_bitmap, 0) == -1)return -1; // 没内存了
+		target_page_dir->address = 0x100 + bitmap_find_top(&page_bitmap, 0);
+		bitmap_set(&page_bitmap, bitmap_find_top(&page_bitmap, 0), 1);
+		target_page_dir->present = 1;
+	}
+	uint32_t page_idx_addr = pdt[page_dir_idx].address << 12;
+	PTE* target_page_entry = (PTE*)(page_idx_addr + sizeof(PTE) * page_idx);
+	*(uint32_t*)target_page_entry = 0;
+	if (bbitmap_find_top(&mem_bitmap, 0) == -1)return -1; // 没内存了
+	target_page_entry->address = bbitmap_find_top(&mem_bitmap, 0);
+	target_page_entry->rw = 1;
+	target_page_entry->user = 1; // 以后改
+	target_page_entry->present = 1;
+	bbitmap_set(&mem_bitmap, target_page_entry->address, PHMM_KERNEL); // 以后改
+	printk("Virtual Memory 0x%08X mapped to Physical Memory 0x%08X\n", addr, target_page_entry->address << 12);
+	tlb_flush_piece(addr);
+	return 0;
+}
+uint32_t get_cr2() {
+	asm volatile("movl %cr2, %eax\n");
+}
+uint32_t get_cr3() {
+	asm volatile("movl %cr3, %eax\n");
+}
+void set_cr3(uint32_t pde) {
+	asm volatile("movl %%eax, %%cr3\n" ::"a"(pde));
+}
+
+uint64_t calc_mem(void) {
+	uint32_t* ards_count_ptr = (uint32_t*)0x7e00;
+	uint32_t ards_count = *ards_count_ptr;
+	ards_t* ards_ptr = (ards_t*)0x7e10;
+
+	uint64_t total_mem = 0;
+
+	for (uint32_t i = 0; i < ards_count; i++) {
+		ards_t* ards = &ards_ptr[i];
+
+		uint64_t length = (uint64_t)ards->length;
+
+		if (ards->type == ARDS_TYPE_USABLE) {
+			total_mem += length;
+		}
+
+		printk("ARDS[%d]: base=0x%016x, ",
+			i, (uint64_t)ards->base);
+		printk("lgth=0x%016x, ",
+			(uint64_t)length);
+		printk("type=%d\n",
+			ards->type);
+	}
+	printk("USABLE MEMORY %dKB\n", total_mem >> 10);
+	return total_mem;
+}
+
+void mmap_init() {
+	page_bitmap.bits = 0x240000; // 页表位图 0x240000 for 256 bits
+	page_bitmap.length = 256;
+	memset(page_bitmap.bits, 0, 32);
+
+	bitmap_set(&page_bitmap, 0, 1); // 页目录表本身
+	bitmap_set(&page_bitmap, 1, 1);
+	bitmap_set(&page_bitmap, 2, 1); // 内核占用的
+	bitmap_set(&page_bitmap, 255, 1); // 环回
+
+	mem_bitmap.bits = mmap_src; // 物理地址存在性位图 0x200000 for 1,048,576 doublebits
+	mem_bitmap.length = 0x100000;
+	memset(mmap_src, 0xff, 0x40000);
+
+	uint32_t* ards_count_ptr = (uint32_t*)0x7e00;
+	uint32_t ards_count = *ards_count_ptr;
+	ards_t* ards_ptr = (ards_t*)0x7e10;
+	
+	for (uint32_t i = 0; i < ards_count; i++) {
+		ards_t* ards = &ards_ptr[i];
+
+		if (ards->type == ARDS_TYPE_USABLE) {
+			uint32_t pos = ards->base / 4096;
+			for (uint32_t j = 0; j < ards->length / 4096; j++) {
+				bbitmap_set(&mem_bitmap, pos + j, PHMM_USABLE);
+			}
+		}
+	}
+	for (uint32_t i = 0; i < 0x800000 / 4096; i++) {
+		bbitmap_set(&mem_bitmap, i, PHMM_KERNEL);;
+	}
+
+	mm_manage_p.buffer = (mm_manage_t*)0x280000;
+	memset(mm_manage_p.buffer, 0, 0x80000);
+	pdt = (PDE*)get_cr3();
+
+	PTE* tmp = (PTE*)(pdt[0].address << 12);
+	*(uint32_t*)tmp = 0;
+	tlb_flush_piece(0x00000000);
+
+	mem_nodes = (node_t*)0x300000;
+	memset(mem_nodes, 0, 0x100000);
+
+	mem_nodes[0].address = 0;
+	mem_nodes[0].flags = NODE_PRESENT | NODE_START | NODE_ACCESSED;
+	mem_nodes[0].next = &mem_nodes[2];
+	mem_nodes[0].prev = &mem_nodes[1];
+	
+	mem_nodes[1].address = 0xfffff000;
+	mem_nodes[1].flags = NODE_PRESENT | NODE_END | NODE_ACCESSED;
+	mem_nodes[1].next = &mem_nodes[0];
+	mem_nodes[1].prev = &mem_nodes[3];
+
+	mem_nodes[2].address = 0x00010000;
+	mem_nodes[2].flags = NODE_PRESENT | NODE_ACCESSED;
+	mem_nodes[2].next = &mem_nodes[3];
+	mem_nodes[2].prev = &mem_nodes[1];
+
+	mem_nodes[3].address = 0x00800000;
+	mem_nodes[3].flags = NODE_PRESENT;
+	mem_nodes[3].next = &mem_nodes[1];
+	mem_nodes[3].prev = &mem_nodes[2];
+}
+
+void list_pte(uint32_t addr) {
+	PTE* pt = (PTE*)addr;
+	int count = 0;
+	for (int i = 0; i < 1024; i++) {
+		if (pt[i].present)
+			count++;
+	}
+	printk(" - page table @0x%08X has entries %d.\n", addr, count);
+}
+void list_pde() {
+	uint32_t base = 0x100000;
+	PDE* pdt = (PDE*)base;
+	for (int i = 0; i < 1024; i++) {
+		if (pdt[i].present) {
+			printk("page dir @0x%08X:\n", (uint32_t)&pdt[i]);
+			list_pte(pdt[i].address << 12);
+		}
+	}
+}
+
+void kmalloc(uint32_t size) {
+	node_t* node = node_free();
+	printk("0x%08X:0x%08X\n", node, node->address);
+}
+
+
+#endif
