@@ -7,5 +7,8 @@ void bxbp(void) {
 int cheax(void) {
 	return 0xcafebabe;
 }
+int cheax2(uint32_t val) {
+	return val;
+}
 
 #endif

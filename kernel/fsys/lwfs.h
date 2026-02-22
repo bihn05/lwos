@@ -15,7 +15,7 @@
 #include <driver/ata.h>
 #include <mm/km.h>
 
-#pragma pack(push, 8)
+#pragma pack(push, 1)
 typedef struct {
 	uint8_t jmp_code[3];
 	char filesys_name[8];
@@ -38,7 +38,7 @@ typedef struct {
 } mbr_t;
 #pragma pack(pop)
 mbr_t mbr;
-#pragma pack(push, 8)
+#pragma pack(push, 1)
 typedef struct {
 	char filename[28];
 	uint32_t length;
@@ -106,7 +106,11 @@ void get_fat_entry(fat_t* t, uint32_t index) {
 		printk("invaild index\n");
 		return;
 	}
-	ata_read_sectors(0, 0, mbr.fat_offset + index / 8, 1, hd_buffer);
-	memcpy((char*)t + 8 * (index % 8), hd_buffer, 64);
+	uint32_t sector_offset = index / 8;
+	uint32_t entry_in_sector = index % 8;
+
+	ata_read_sectors(0, 0, mbr.fat_offset + sector_offset, 1, hd_buffer);
+
+	memcpy(t, hd_buffer + entry_in_sector * sizeof(fat_t), sizeof(fat_t));
 }
 #endif

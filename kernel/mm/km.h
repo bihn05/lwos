@@ -13,7 +13,8 @@
 typedef struct chunk_header {
     struct chunk_header* next;  // next chunk
     uint32_t size;              // current chunk size
-    bool is_free;               // chunk status
+    uint32_t is_free;               // chunk status
+    uint32_t unused;                // for 8 bytes alignment
 } chunk_header_t;
 
 // global heap ptr
@@ -47,7 +48,7 @@ void* kmalloc(uint32_t size) {
     if (size == 0)return 0; // r u kid me
 
     // align to 8
-    uint32_t aligned_size = (size + 3) & ~3;
+    uint32_t aligned_size = (size + 7) & ~7;
 
     chunk_header_t* curr = kheap_first_chunk;
 

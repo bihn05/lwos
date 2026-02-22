@@ -15,6 +15,7 @@
 #include <speaker.h>
 #include <driver/graphics.h>
 #include <fsys/lwfs.h>
+#include <fpu.h>
 
 #include <sdbg/superdebug.h>
 
@@ -53,14 +54,21 @@ void kernel_init() {
 	load_mbr();
 	display_banner();
 	pci_scan_bus();
+	init_fpu();
 
 	init_multitasking();
+
 	create_kernel_thread(task_a);
 	create_kernel_thread(task_b);
+
 	pit_init();
-	__asm("sti");
-	cheax();
-	while (1);
+	//cheax(); // eax = 0xcafebabe
+
+	__asm volatile("sti"); // enable interrupts
+
+	while (1) {
+		__asm volatile("hlt");
+	}
 
 	super_dbg();
 

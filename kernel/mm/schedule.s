@@ -4,32 +4,61 @@ extern schedule
 ; void context_switch(task_t *next);
 global context_switch
 context_switch:
-	pusha
-	pushf
-
 	mov eax, [current_task]
+
+	push ebp
+	mov ebp, esp
+
+	pushf
+	pusha
 	mov [eax], esp
 
-	; switch stack
-
-	mov edx, [esp + 40]
+	mov edx, [ebp+8]
 	mov [current_task], edx
-	
 	mov esp, [edx]
 
-	mov ecx, [edx + 4]
-	mov ebx, cr3
-	cmp ebx, ecx
-	je .skip_cr3
-	mov cr3, ecx
-.skip_cr3:
-
-	popf
 	popa
+	popf
+	pop ebp
+	ret
+
+global kernel_thread_entry
+kernel_thread_entry:
+	sti
+	call ebx
+.die:
+	hlt
+	jmp .die
+
+global switch_task
+; void switch_task(task_t* prev, task_t* next);
+switch_task:
+
+	; get prmt from c call
+	mov eax, [esp + 4]
+	mov edx, [esp + 8]
+
+	; save used
+	push ebp
+	push ebx
+	push esi
+	push edi
+
+	mov [eax], esp
+	mov esp, [edx]
+
+	mov eax, [edx + 4]
+
+	pop edi
+	pop esi
+	pop ebx
+	pop ebp
 
 	ret
 
 global timer_schedule
+extern do_timer_tick
+
 timer_schedule:
 	pusha
 	
@@ -45,7 +74,7 @@ timer_schedule:
 	mov al, 0x20
 	out 0x20, al
 
-	call schedule
+	call do_timer_tick
 
 	pop gs
 	pop fs

@@ -290,6 +290,10 @@ read_scts:
 	jmp .loop1
 .err:
 	mov eax, [esp+0xc]
+	push str_err
+	call putstr
+	add esp, 0x4
+	jmp $
 	jmp .done
 .ok:
 	mov eax, 0
@@ -452,3 +456,4 @@ cursor_y: db 0
 char_attr: dw 0x0F00
 
 str: db "lwloader working. . .", 0
+str_err: db "##BAD MEDIA", 0

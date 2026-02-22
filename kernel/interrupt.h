@@ -156,7 +156,7 @@ void interrupt_handler(int_registers_t* regs) {
 }
 void irq_handler(int_registers_t* regs) {
 	uint8_t irq_num = regs->int_no - 32;
-	printk(" * INTERRUPT REQUEST #%d\n", irq_num);
+	//printk(" * INTERRUPT REQUEST #%d\n", irq_num);
 	send_eoi(irq_num);
 }
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {

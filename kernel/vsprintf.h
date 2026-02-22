@@ -117,6 +117,7 @@ static char* number(char* str, uint32_t* num, int base, int size, int precision,
 int vsprintf(char* buf, const char* fmt, va_list args) {
 	int len;
 	uint32_t num;
+	double dval;
 	int i, base;
 	int* ip;
 	char* str;
@@ -216,6 +217,12 @@ int vsprintf(char* buf, const char* fmt, va_list args) {
 		case 'u':
 			num = va_arg(args, uint32_t);
 			str = number(str, &num, 10, field_width, precision, flags);
+			break;
+		case 'f':
+			flags |= DOUBLE;
+			dval = va_arg(args, double); // 必须用 double 提取 8 字节
+			// 强转为 uint32_t* 传进去，因为你的 number() 内部非常聪明地使用了 *(double*)num 来解析！
+			str = number(str, (uint32_t*)&dval, 10, field_width, precision, flags);
 			break;
 		case 'n':
 			ip = va_arg(args, int*);
