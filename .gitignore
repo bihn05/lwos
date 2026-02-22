@@ -1,0 +1,24 @@
+# VS Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# 编译生成的文件
+*.o
+*.bin
+*.obj
+*.exe
+*.out
+*.class
+
+# 其他常见的编译中间文件
+*.d
+*.i
+*.lst
+*.map
+*.elf
+*.hex
