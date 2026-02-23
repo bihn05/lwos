@@ -1,8 +1,13 @@
+// kernel/driver/ata.h
+
 #ifndef ATA_H
 #define ATA_H
 
 #include <stdint.h>
 #include <kernel.h>
+#include <mm/km.h>
+
+#include <fsys/block.h>
 
 #define ATA_PRIMARY_BASE      0x1F0
 #define ATA_SECONDARY_BASE    0x170
@@ -529,6 +534,32 @@ ata_device_t* ata_get_device(uint8_t index) {
 
 uint8_t ata_get_device_count() {
     return ata_device_count;
+}
+
+static int ata_block_read(block_dev_t* dev, uint64_t lba, uint32_t count, void* buffer) {
+    ata_device_t* ata_dev = (ata_device_t*)dev->private_data;
+    return ata_read_sectors(ata_dev->channel, ata_dev->drive, lba, (uint16_t)count, buffer);
+}
+static int ata_block_write(block_dev_t* dev, uint64_t lba, uint32_t count, void* buffer) {
+    ata_device_t* ata_dev = (ata_device_t*)dev->private_data;
+    return ata_write_sectors(ata_dev->channel, ata_dev->drive, lba, (uint16_t)count, buffer);
+}
+static block_dev_ops_t ata_block_ops = {
+    .read = ata_block_read,
+    .write = ata_block_write,
+    .get_info = NULL
+};
+block_dev_t ata_get_block_device(uint8_t index) {
+    ata_device_t* ata_dev = ata_get_device(index);
+    if (!ata_dev) return (block_dev_t){0};
+
+    block_dev_t* bdev = (block_dev_t*)kmalloc(sizeof(block_dev_t));
+    strncpy(bdev->dev_name, ata_dev->model, 31);
+    bdev->sector_size = 512;
+    bdev->total_sectors = ata_dev->size;
+    bdev->ops = &ata_block_ops;
+    bdev->private_data = (void*)ata_dev;
+    return *bdev;
 }
 
 #endif

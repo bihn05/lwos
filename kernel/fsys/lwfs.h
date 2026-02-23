@@ -1,3 +1,4 @@
+// kernel/fsys/lwfs.h
 #ifndef _LWFS_H
 #define _LWFS_H
 
@@ -13,7 +14,8 @@
 
 #include <stdint.h>
 #include <driver/ata.h>
-#include <mm/km.h>
+#include <fsys/block.h>
+#include <fsys/vfs.h>
 
 #pragma pack(push, 1)
 typedef struct {
@@ -37,7 +39,7 @@ typedef struct {
 	char reserved2;
 } mbr_t;
 #pragma pack(pop)
-mbr_t mbr;
+mbr_t sb;
 #pragma pack(push, 1)
 typedef struct {
 	char filename[28];
@@ -52,65 +54,60 @@ typedef struct {
 } fat_t;
 #pragma pack(pop)
 
-char* hd_buffer;
-void init_fs();
-void load_mbr(void);
-void save_mbr(void);
-void fat_info(fat_t* t);
-void get_fat_entry(fat_t* t, uint32_t index);
-void set_fat_entry(fat_t* t, uint32_t index);
-void get_cluster(uint32_t* cluster, uint32_t index);
-void set_cluster(uint32_t* cluster, uint32_t index);
+typedef struct {
+    block_dev_t* disk;          // 绑定的块设备
+    mbr_t sb;      // 内存中缓存的超级块
+    vfs_node_t* root_node;      // 挂载点(根目录)的 VFS 节点
+} lwfs_instance_t;
 
-void init_fs() {
-	hd_buffer = (char*)kmalloc(512);
-	if (hd_buffer == NULL) {
-		printk("Failed allocate buffer, filesystem may not work.\n");
-	} else {
-		printk("Sucessfully located hd buffer at 0x%08X.\n", (uint32_t)hd_buffer);
-	}
-}
-void load_mbr(void) {
-	int a= ata_read_sectors(0, 0, 0, 1, &mbr);
-	printk("returned %d\n", a);
-	printk("filesystem name:      %s\n", mbr.filesys_name);
-	printk("partition start lba:  %d\n", mbr.partition_offset);
-	printk("partition sectors:    %d\n", mbr.partition_length);
-	printk("fat r-offset:         %d\n", mbr.fat_offset);
-	printk("fat sectors:          %d\n", mbr.fat_length);
-	printk("cluster heap r-offset:%d\n", mbr.cluster_offset);
-	printk("cluster counts:       %d\n", mbr.cluster_count);
-	printk("root start cluster:   %d\n", mbr.root_cluster);
-	printk("sectors per cluster:  %d(%dKB)\n",
-		(1 << mbr.clustor_shift), (512 << mbr.clustor_shift) / 1024);
-}
-void fat_info(fat_t* t) {
-//	if ((t->attr & FILE_PRESENT) == 0) {
-//		printk("file not exist\n");
-//		return;
-//	}
-	if (t->attr & FILE_DIR) {
-		printk("** directory **\n");
-		printk("");
-	}
-	else {
-		printk("file name:      %s\n", t->filename);
-		printk("extend name:    %s\n", t->extname);
-		printk("file length:    %d\n", t->length);
-		printk("start cluster:  %d\n", t->cluster_start);
-		printk("flags:        0x%02X\n", t->attr);
-	}
-}
-void get_fat_entry(fat_t* t, uint32_t index) {
-	if (index > mbr.fat_length * 8) {
-		printk("invaild index\n");
-		return;
-	}
-	uint32_t sector_offset = index / 8;
-	uint32_t entry_in_sector = index % 8;
+// 初始化并挂载 LWFS 文件系统
+lwfs_instance_t* lwfs_mount(block_dev_t* dev);
 
-	ata_read_sectors(0, 0, mbr.fat_offset + sector_offset, 1, hd_buffer);
+// 前置声明：LWFS 专门实现的读取函数和查找函数
+static int lwfs_read_file(vfs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+static vfs_node_t* lwfs_finddir(vfs_node_t* dir, const char* name);
 
-	memcpy(t, hd_buffer + entry_in_sector * sizeof(fat_t), sizeof(fat_t));
+static vfs_ops_t lwfs_vfs_ops = {
+    .read = lwfs_read_file,
+    .write = NULL, // 待实现
+    .finddir = lwfs_finddir
+};
+
+lwfs_instance_t* lwfs_mount(block_dev_t* dev) {
+    lwfs_instance_t* inst = (lwfs_instance_t*)kmalloc(sizeof(lwfs_instance_t));
+    inst->disk = dev;
+    // 1. 读取超级块 (MBR 偏移为 0 的地方)
+    // 注意：要跳过前几个字节的汇编指令，准确读取结构体
+    dev->ops->read(dev, 0, 1, &sb);
+
+    // 2. 创建并组装根目录的 VFS 节点
+    inst->root_node = (vfs_node_t*)kmalloc(sizeof(vfs_node_t));
+    strcpy(inst->root_node->name, "/");
+    inst->root_node->flags = VFS_FLAG_DIR;
+    
+    // 利用私有数据存放起始簇号，假设从超级块的 root_cluster 获取
+    inst->root_node->fs_private_data = (void*)inst->sb.root_cluster; 
+    
+    // 3. 将 VFS 的操作指针，指向 LWFS 的具体实现
+    inst->root_node->ops = &lwfs_vfs_ops;
+
+    return inst;
 }
+
+static uint64_t lwfs_cluster_to_lba(lwfs_instance_t* inst, uint32_t cluster) {
+	return inst->sb.cluster_offset + (cluster - 2) * (1 << inst->sb.clustor_shift);
+}
+uint32_t lwfs_get_next_cluster(lwfs_instance_t* inst, uint32_t cluster) {
+	uint32_t fat_lba = inst->sb.cluster_offset;
+	uint32_t entries_per_sector = inst->disk->sector_size / sizeof(uint32_t);
+
+	uint32_t sector_idx = cluster / entries_per_sector;
+	uint32_t offset_in_sector = cluster % entries_per_sector;
+
+	uint32_t* heap_buf = (uint32_t*)inst->cache_buf;
+	inst->disk->ops->read(inst->disk, fat_lba + sector_idx, 1, heap_buf);
+
+	return heap_buf[offset_in_sector];
+}
+
 #endif

@@ -1,3 +1,5 @@
+; 簇堆表，每一项指向下一簇的簇号，-1表示结束簇
+
 dd 0xffffffff
 dd 0xffffffff
 dd 0x00000003

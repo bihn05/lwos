@@ -46,6 +46,38 @@ int strcmp(const char* cs, const char* ct) {
 	}
 	return 0;
 }
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    // 标准实现
+    for (size_t i = 0; i < n; i++) {
+        if (s1[i] != s2[i]) {
+            return (unsigned char)s1[i] - (unsigned char)s2[i];
+        }
+        if (s1[i] == '\0') {
+            return 0;
+        }
+    }
+    return 0;
+}
+char *strncpy(char *dest, const char *src, size_t n)
+{
+    // 标准实现
+    char *d = dest;
+    const char *s = src;
+    size_t i;
+    
+    // 复制最多 n 个字符
+    for (i = 0; i < n && *s != '\0'; i++) {
+        *d++ = *s++;
+    }
+    
+    // 如果 src 长度小于 n，填充剩余位置为 '\0'
+    for (; i < n; i++) {
+        *d++ = '\0';
+    }
+    
+    return dest;
+}
 bool is_inside(int boundary1, int boundary2, int value) {
 	int max = (boundary1 >= boundary2) ? boundary1 : boundary2;
 	int min = (boundary1 >= boundary2) ? boundary2 : boundary1;

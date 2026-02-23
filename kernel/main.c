@@ -1,3 +1,5 @@
+// kernel/main.c
+
 #include <kernel.h>
 #include <interrupt.h>
 #include <descript.h>
@@ -45,16 +47,15 @@ void kernel_init() {
 		printk(" * ACPI not supported.\n");
 	}
 //	enable_spk();
-	ata_init();
-	ata_detect_drives();
 	pmm_init();
 	vmm_init();
 	kheap_init();
-	init_fs();
-	load_mbr();
 	display_banner();
 	pci_scan_bus();
 	init_fpu();
+
+	ata_init();
+	ata_detect_drives();
 
 	init_multitasking();
 
