@@ -18,8 +18,7 @@
 #include <driver/graphics.h>
 #include <fsys/lwfs.h>
 #include <fpu.h>
-
-#include <sdbg/superdebug.h>
+#include <math/math.h>
 
 void display_banner() {
 	printk(" ___       ___       __   ________  ________      \n");
@@ -33,6 +32,34 @@ void display_banner() {
 	printk("                                                  \n");
 	printk("   CODE is COSTARICA                              \n\n");
 }
+vfs_node_t* vfs_root = NULL;
+void demo_fs(vfs_node_t* root) {
+	// find file
+	// vfs_node_t* file = root->ops->finddir(root, "TEST.TXT");
+	vfs_node_t* file = lwfs_resolve_path((lwfs_instance_t*)root->fs_instance, "/TEST.TXT");
+	
+	if (file) {
+		printk("Found file: %s, size: %d bytes, start cluster: %d\n", 
+			file->name, file->size, (uint32_t)file->fs_private_data);
+		
+		uint8_t* buffer = (uint8_t*)kmalloc(512);
+		int bytes_read = file->ops->read(file, 0, 512, buffer);
+		if (bytes_read > 0) {
+			printk("Read %d bytes from file:\n", bytes_read);
+			dump_chunk(buffer, 1);
+			printk("\n");
+		} else {
+			printk("Failed to read from file.\n");
+		}
+		kfree(buffer);
+	} else {
+		printk("File not found in root directory.\n");
+	}
+}
+typedef struct {
+	double r;
+	double a, w;
+} ball_t;
 void kernel_init() {
 	writereg_video(g_640x480x2);
 	clear_device();
@@ -57,6 +84,28 @@ void kernel_init() {
 	ata_init();
 	ata_detect_drives();
 
+	if (ata_get_device_count() > 0) {
+		block_dev_t* sda = ata_get_block_device_ptr(0);
+
+		if (sda != NULL) {
+			vfs_root = lwfs_mount(sda);
+
+			if (vfs_root != NULL) {
+				printk("LWFS mounted successfully on %s\n", sda->dev_name);
+			} else {
+				printk("Failed to mount LWFS on %s\n", sda->dev_name);
+			}
+		}
+	} else {
+		printk("No ATA devices found, skipping LWFS mount.\n");
+	}
+
+	demo_fs(vfs_root);
+
+	while (1) {
+		__asm volatile("hlt");
+	}
+
 	init_multitasking();
 
 	create_kernel_thread(task_a);
@@ -66,12 +115,6 @@ void kernel_init() {
 	//cheax(); // eax = 0xcafebabe
 
 	__asm volatile("sti"); // enable interrupts
-
-	while (1) {
-		__asm volatile("hlt");
-	}
-
-	super_dbg();
 
 	bxbp();
 	cheax();

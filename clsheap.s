@@ -1,20 +1,30 @@
 ; 簇堆表，每一项指向下一簇的簇号，-1表示结束簇
 
-dd 0xffffffff
-dd 0xffffffff
-dd 0x00000003
-dd 0x00000004
-dd 0x00000005
-dd 0x00000006
-dd 0x00000007
-dd 0x00000008
-dd 0x00000009
-dd 0x0000000a
-dd 0x0000000b
-dd 0x0000000c
-dd 0x0000000d
-dd 0x0000000e
-dd 0x0000000f
-dd 0x00000010
-dd 0x00000011
-dd 0xffffffff
+dd 0xffffffff ; 0
+dd 0xffffffff ; 1
+dd 3 ; 2
+dd 4 ; 3
+dd 5 ; 4
+dd 6 ; 5
+dd 7 ; 6
+dd 8 ; 7
+dd 9 ; 8
+dd 10 ; 9
+dd 11 ; 10
+dd 12 ; 11
+dd 13 ; 12
+dd 14 ; 13
+dd 15 ; 14
+dd 16 ; 15
+dd 17 ; 16
+dd 18 ; 17
+dd 19 ; 18
+dd 20 ; 19
+dd 21 ; 20
+dd 22 ; 21
+dd 23 ; 22
+dd 24 ; 23
+dd 25 ; 24
+dd 26 ; 25
+dd 0xffffffff ; 26
+dd 0xffffffff ; 27

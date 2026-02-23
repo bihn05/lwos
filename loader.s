@@ -130,7 +130,7 @@ setup_page:
 	push dword 0
 	push dword 0x10
 	push dword 200
-	push dword 8712
+	push dword 8728
 	call read_scts
 	add esp, 0x14
 

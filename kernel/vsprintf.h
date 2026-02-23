@@ -243,4 +243,32 @@ int vsprintf(char* buf, const char* fmt, va_list args) {
 	return i;
 }
 
+// 实现标准的 sprintf
+int sprintf(char *buf, const char *fmt, ...) {
+    va_list args;
+    int i;
+    
+    va_start(args, fmt);
+    i = vsprintf(buf, fmt, args);
+    va_end(args);
+    
+    return i;
+}
+
+// 实现 snprintf (早期内核的过渡版本)
+int snprintf(char *buf, int size, const char *fmt, ...) {
+    va_list args;
+    int i;
+    
+    // 警告：目前的 vsprintf 并没有利用 size 参数进行内存边界检查！
+    // 只要你的 full_name 数组足够大（比如 32 字节），这里就不会有问题。
+    // 如果想要绝对安全，未来需要把 vsprintf 重构为 vsnprintf。
+    
+    va_start(args, fmt);
+    i = vsprintf(buf, fmt, args);
+    va_end(args);
+    
+    return i;
+}
+
 #endif

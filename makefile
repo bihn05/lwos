@@ -73,7 +73,8 @@ master.img: base img.img
 	$(DD) bs=512 count=7 seek=1 if=loader.bin of=master.img conv=notrunc
 	$(DD) bs=512 count=8192 seek=8 if=fat.bin of=master.img conv=notrunc
 	$(DD) bs=512 count=512 seek=8200 if=clsheap.bin of=master.img conv=notrunc
-	$(DD) bs=512 count=200 seek=8712 if=system.bin of=master.img conv=notrunc
+	$(DD) bs=512 count=200 seek=8728 if=system.bin of=master.img conv=notrunc
+	$(DD) bs=512 count=1 seek=8928 if=test.txt of=master.img conv=notrunc
 
 # 运行目标
 run: master.img

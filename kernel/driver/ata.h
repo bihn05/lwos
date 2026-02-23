@@ -549,17 +549,21 @@ static block_dev_ops_t ata_block_ops = {
     .write = ata_block_write,
     .get_info = NULL
 };
-block_dev_t ata_get_block_device(uint8_t index) {
+block_dev_t* ata_get_block_device_ptr(uint8_t index) {
     ata_device_t* ata_dev = ata_get_device(index);
-    if (!ata_dev) return (block_dev_t){0};
-
+    if (!ata_dev) {
+        printk("Invalid ATA device index: %d\n", index);
+        return NULL;
+    }
+    printk("Creating block device for ATA device %d\n", index);
     block_dev_t* bdev = (block_dev_t*)kmalloc(sizeof(block_dev_t));
     strncpy(bdev->dev_name, ata_dev->model, 31);
     bdev->sector_size = 512;
     bdev->total_sectors = ata_dev->size;
     bdev->ops = &ata_block_ops;
     bdev->private_data = (void*)ata_dev;
-    return *bdev;
+    
+    return bdev;
 }
 
 #endif

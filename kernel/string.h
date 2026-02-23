@@ -78,6 +78,47 @@ char *strncpy(char *dest, const char *src, size_t n)
     
     return dest;
 }
+// 标准实现
+char *strcat(char *dest, const char *src)
+{
+    char *d = dest;
+    
+    // 找到 dest 的末尾
+    while (*d != '\0') {
+        d++;
+    }
+    
+    // 复制 src 到 dest 末尾
+    while (*src != '\0') {
+        *d++ = *src++;
+    }
+    
+    // 添加字符串结束符
+    *d = '\0';
+    
+    return dest;
+}
+char *strncat(char *dest, const char *src, size_t n)
+{
+    char *d = dest;
+    size_t i;
+    
+    // 找到 dest 的末尾
+    while (*d != '\0') {
+        d++;
+    }
+    
+    // 复制最多 n 个字符
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+        d[i] = src[i];
+    }
+    
+    // 添加字符串结束符
+    d[i] = '\0';
+    
+    return dest;
+}
+
 bool is_inside(int boundary1, int boundary2, int value) {
 	int max = (boundary1 >= boundary2) ? boundary1 : boundary2;
 	int min = (boundary1 >= boundary2) ? boundary2 : boundary1;
