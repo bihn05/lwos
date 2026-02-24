@@ -1,0 +1,34 @@
+; 簇堆表，每一项指向下一簇的簇号，-1表示结束簇
+
+dd 0xffffffff ; 0 nothing
+dd 0xffffffff ; 1 nothing
+dd 3 ; 2 kernel code
+dd 4 ; 3
+dd 5 ; 4
+dd 6 ; 5
+dd 7 ; 6
+dd 8 ; 7
+dd 9 ; 8
+dd 10 ; 9
+dd 11 ; 10
+dd 12 ; 11
+dd 13 ; 12
+dd 14 ; 13
+dd 15 ; 14
+dd 16 ; 15
+dd 17 ; 16
+dd 18 ; 17
+dd 19 ; 18
+dd 20 ; 19
+dd 21 ; 20
+dd 22 ; 21
+dd 23 ; 22
+dd 24 ; 23
+dd 25 ; 24
+dd 26 ; 25
+dd 0xffffffff ; 26
+dd 0xffffffff ; 27 test.txt
+dd 29 ; 28 test.elf
+dd 30 ; 29
+dd 31 ; 30
+dd 0xffffffff ; 31
