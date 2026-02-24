@@ -124,9 +124,24 @@ pmode_start:
 	rep stosd
 
 	; 设置页表条目
+	; mov dword [0x100000], 0x101003 ; PML4[0] 指向 PDPT (Present + R/W)
+	; mov dword [0x101000], 0x102003 ; PDPT[0] 指向 PD   (Present + R/W)
+	; mov dword [0x102000], 0x000083 ; PD[0] 映射 0x0 开始的 2MB 巨页 (Present + R/W + Huge)
+
+; 设置 PML4 和 PDPT 的第一项
 	mov dword [0x100000], 0x101003 ; PML4[0] 指向 PDPT (Present + R/W)
 	mov dword [0x101000], 0x102003 ; PDPT[0] 指向 PD   (Present + R/W)
-	mov dword [0x102000], 0x000083 ; PD[0] 映射 0x0 开始的 2MB 巨页 (Present + R/W + Huge)
+
+	; 循环填充 PD 的 512 个条目，映射前 1GB 物理内存
+	mov edi, 0x102000    ; PD 基址
+	mov eax, 0x00000083  ; 初始值：物理地址 0, Present, R/W, Huge Page (2MB)
+	mov ecx, 512         ; 循环 512 次
+.map_1gb:
+	mov [edi], eax       ; 写入低 32 位 (地址 + 属性)
+	mov dword [edi+4], 0 ; 写入高 32 位 (设为 0)
+	add eax, 0x200000    ; 每次增加 2MB (物理基址递增)
+	add edi, 8           ; 每次向后移动 8 个字节 (64位页表条目占 8 字节)
+	loop .map_1gb
 
 	; 3. 开启 PAE (Physical Address Extension)
 	mov eax, cr4

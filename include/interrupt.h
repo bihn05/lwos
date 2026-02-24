@@ -1,43 +1,60 @@
-#ifndef _INTERRUPT_H
-#define _INTERRUPT_H
+#ifndef _INTERRUPT_H_
+#define _INTERRUPT_H_
 
 #include <stdint.h>
+#include <pic.h>
+#define KERNEL_CS 0x08
+
+// 64 位 IDT 门类型标志位
+#define IDT_INT_GATE_64     0x8E  // 1000 1110 (Present, DPL=0, 64-bit Interrupt Gate)
+#define IDT_TRAP_GATE_64    0x8F  // 1000 1111 (Present, DPL=0, 64-bit Trap Gate)
+#define IDT_INT_GATE_USER   0xEE  // 1110 1110 (Present, DPL=3, 允许用户态 int 指令调用)
+
+#define IDT_ENTRIES 256
 
 #pragma pack(push, 1)
-// 64位 IDT 表项 (16字节)
+
+// 64 位 IDT 表项 (16 字节) 
 typedef struct {
-    uint16_t offset_low;    // 目标代码段偏移 0-15
-    uint16_t selector;      // 目标代码段选择子 (比如 KERNEL_CS 0x08)
-    uint8_t  ist;           // 中断栈表偏移 (Interrupt Stack Table)，填 0 即可
-    uint8_t  type_attr;     // 类型与属性标志
-    uint16_t offset_mid;    // 目标代码段偏移 16-31
-    uint32_t offset_high;   // 目标代码段偏移 32-63
-    uint32_t zero;          // 保留位，必须为 0
+    uint16_t offset_low;    // 目标偏移 0-15
+    uint16_t selector;      // 代码段选择子
+    uint8_t  ist;           // 中断栈表偏移 (Interrupt Stack Table)，通常填 0
+    uint8_t  type_attr;     // 类型和属性标志
+    uint16_t offset_mid;    // 目标偏移 16-31
+    uint32_t offset_high;   // 目标偏移 32-63
+    uint32_t zero;          // 必须为 0
 } idt_entry_t;
 
-// 64位 IDTR 指针
+// 64 位 IDTR 指针
 typedef struct {
     uint16_t limit;
-    uint64_t base;          // 必须是 64 位指针
+    uint64_t base;
 } idtr_t;
-#pragma pack(pop)
 
-// 传递给 C 语言的中断/异常上下文结构
+// 64 位中断上下文寄存器 (与 int.s 中 push 的顺序严格对应)
 typedef struct {
-    // 1. 我们手动压入的寄存器 (对应汇编里的 push)
+    // 手动压入的 15 个通用寄存器
     uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
     uint64_t rbp, rdi, rsi, rdx, rcx, rbx, rax;
     
-    // 2. 中断号与错误码 (我们手动压入的)
+    // 宏里手动压入的
     uint64_t int_no;
     uint64_t err_code;
     
-    // 3. 硬件 CPU 自动压入的 5 个关键值！
+    // 发生中断时 CPU 硬件自动压入的 5 个关键值
     uint64_t rip;
     uint64_t cs;
     uint64_t rflags;
     uint64_t rsp;
     uint64_t ss;
 } int_registers_t;
+
+#pragma pack(pop)
+
+// 导出初始化函数
+void idt_init(void);
+void interrupt_handler(int_registers_t* regs);
+
+void timer_handler(int_registers_t* regs);
 
 #endif
