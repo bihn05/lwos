@@ -19,6 +19,7 @@
 #include <fsys/lwfs.h>
 #include <fpu.h>
 #include <math/math.h>
+#include <fsys/elf.h>
 
 void display_banner() {
 	printk(" ___       ___       __   ________  ________      \n");
@@ -33,29 +34,7 @@ void display_banner() {
 	printk("   CODE is COSTARICA                              \n\n");
 }
 vfs_node_t* vfs_root = NULL;
-void demo_fs(vfs_node_t* root) {
-	// find file
-	// vfs_node_t* file = root->ops->finddir(root, "TEST.TXT");
-	vfs_node_t* file = lwfs_resolve_path((lwfs_instance_t*)root->fs_instance, "/TEST.TXT");
-	
-	if (file) {
-		printk("Found file: %s, size: %d bytes, start cluster: %d\n", 
-			file->name, file->size, (uint32_t)file->fs_private_data);
-		
-		uint8_t* buffer = (uint8_t*)kmalloc(512);
-		int bytes_read = file->ops->read(file, 0, 512, buffer);
-		if (bytes_read > 0) {
-			printk("Read %d bytes from file:\n", bytes_read);
-			dump_chunk(buffer, 1);
-			printk("\n");
-		} else {
-			printk("Failed to read from file.\n");
-		}
-		kfree(buffer);
-	} else {
-		printk("File not found in root directory.\n");
-	}
-}
+
 typedef struct {
 	double r;
 	double a, w;
@@ -100,7 +79,8 @@ void kernel_init() {
 		printk("No ATA devices found, skipping LWFS mount.\n");
 	}
 
-	demo_fs(vfs_root);
+	vfs_node_t* test_exec = lwfs_resolve_path((lwfs_instance_t*)vfs_root->fs_instance, "/TEST.ELF");
+	load_and_execute_elf(test_exec);
 
 	while (1) {
 		__asm volatile("hlt");

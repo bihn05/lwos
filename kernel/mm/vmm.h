@@ -39,6 +39,9 @@ void map_page(uint32_t virtual_addr, uint32_t physical_addr, uint32_t flags) {
         }
         pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_RW | PAGE_USER;
 
+        __asm volatile ("mov %cr3, %eax");
+        __asm volatile ("mov %eax, %cr3");
+
         uint32_t* pt_vaddr = (uint32_t*)(PT_BASE_VADDR + (pd_idx * 4096));
 
         memset(pt_vaddr, 0, 4096);
@@ -79,6 +82,38 @@ void vmm_init() {
     pd_phys[1023] = 0x100000 | PAGE_PRESENT | PAGE_RW;
     __asm volatile ("mov %cr3, %eax");
     __asm volatile ("mov %eax, %cr3");
+}
+void vmm_alloc_map_region(uint32_t vaddr, uint32_t size, uint32_t flags) {
+    if (size == 0) return;
+
+    uint32_t start_vaddr = vaddr & 0xfffff000;
+    uint32_t end_vaddr = ((vaddr + size + 0xfff) & 0xfffff000);
+
+    for (uint32_t current_addr = start_vaddr; current_addr < end_vaddr; current_addr += 4096) {
+
+        uint32_t pd_idx = PD_INDEX(current_addr);
+        uint32_t pt_idx = PT_INDEX(current_addr);
+        uint32_t* pd = (uint32_t*)PD_VADDR;
+
+        int is_mapped = 0;
+        if ((pd[pd_idx] & PAGE_PRESENT) != 0) {
+            uint32_t* pt = (uint32_t*)(PT_BASE_VADDR + (pd_idx * 4096));
+            if ((pt[pt_idx] & PAGE_PRESENT) != 0) {
+                is_mapped = 1;
+            }
+        }
+
+        if (!is_mapped) {
+            uint32_t phys_page = pmm_alloc_page();
+            if (phys_page == 0) {
+                printk("###NO MEM for vmm_alloc_map_region\n");
+                return;
+            }
+            map_page(current_addr, phys_page, flags);
+        }
+
+        memset((void*)current_addr, 0, 4096);
+    }
 }
 
 #endif

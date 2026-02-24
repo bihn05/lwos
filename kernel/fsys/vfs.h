@@ -1,7 +1,7 @@
 // kernel/fsys/vfs.h
 
 #ifndef _VFS_H_
-#define _VES_H_
+#define _VFS_H_
 
 #include <stdint.h>
 #include <kernel.h>

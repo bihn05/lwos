@@ -35,6 +35,7 @@ clean:
 	rm -f master.img *.bin system.map
 	rm -f kernel/kernel.bin kernel/*.o
 	rm -f kernel/mm/*.o loader/*.o loader/*.bin
+	rm -f external/*.elf
 
 # 基础系统构建
 base: $(BIN_TARGETS) kernel/kernel.bin system.bin system.map
@@ -65,8 +66,11 @@ system.bin: kernel/kernel.bin
 system.map: kernel/kernel.bin
 	$(NM) $< | sort > $@
 
+external/test.elf: kernel/dev/test.c
+	$(GCC) -m32 -nostdlib -fno-builtin -fno-pic -fno-pie -no-pie -static -e main -Ttext 0x2000000 $< -o $@
+
 # 创建磁盘镜像
-master.img: base img.img
+master.img: base img.img external/test.elf
 	@echo "--------------------Generating Image"
 	cp img.img master.img
 	$(DD) bs=512 count=1 seek=0 if=mbr.bin of=master.img conv=notrunc
@@ -74,7 +78,8 @@ master.img: base img.img
 	$(DD) bs=512 count=8192 seek=8 if=fat.bin of=master.img conv=notrunc
 	$(DD) bs=512 count=512 seek=8200 if=clsheap.bin of=master.img conv=notrunc
 	$(DD) bs=512 count=200 seek=8728 if=system.bin of=master.img conv=notrunc
-	$(DD) bs=512 count=1 seek=8928 if=test.txt of=master.img conv=notrunc
+	$(DD) bs=512 count=8 seek=8928 if=test.txt of=master.img conv=notrunc
+	$(DD) bs=512 count=32 seek=8936 if=external/test.elf of=master.img conv=notrunc
 
 # 运行目标
 run: master.img
