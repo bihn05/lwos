@@ -134,6 +134,9 @@ void irq_handler(int_registers_t* regs);
 void default_handler(void);
 void reserved_handler(void);
 extern void pic_init(void);
+
+extern void int_syscall(void);
+
 void default_handler(void) {
 	printk(" * Unhandled interrupt occurred\n");
 	bxbp();
@@ -319,7 +322,7 @@ void idt_init() {
 	idt_set_gate(125, (uint32_t)unhandle_int125, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
 	idt_set_gate(126, (uint32_t)unhandle_int126, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
 	idt_set_gate(127, (uint32_t)unhandle_int127, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
-	idt_set_gate(128, (uint32_t)unhandle_int128, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
+	idt_set_gate(128, (uint32_t)int_syscall, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
 	idt_set_gate(129, (uint32_t)unhandle_int129, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
 	idt_set_gate(130, (uint32_t)unhandle_int130, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);
 	idt_set_gate(131, (uint32_t)unhandle_int131, KERNEL_CS, IDT_INT_GATE_32 | IDT_PRESENT | IDT_DPL_0);

@@ -1,12 +1,4 @@
-// math/math.h
-
-#ifndef _MATH_H_
-#define _MATH_H_
-
-#include <stdint.h>
-#include <kernel.h>
-
-#define M_PI 3.1415926535
+#include "math.h"
 
 double sqrt(double x) {
     if (x < 0) return -1; // 错误输入
@@ -116,5 +108,3 @@ int rand_range(int min, int max) {
     if (max <= min) return min;
     return rand() % (max - min + 1) + min;
 }
-
-#endif

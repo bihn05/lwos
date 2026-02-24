@@ -36,12 +36,10 @@ void timer_handler(void) {
 	outb(0x20, 0x20);
 }
 
-extern void timer_schedule(void);
-
 void pit_init(void) {
 	uint16_t reload_value = PIT_BASE_FREQ / FREQ_T0;
 
-	idt_set_gate(0x20, (uint32_t)timer_schedule, 0x08, 0x8e);
+	idt_set_gate(0x20, (uint32_t)schedule, 0x08, 0x8e);
 	idt_flush();
 
 	outb(PIT_CMD_INIT, PIT_COMMAND_PORT);

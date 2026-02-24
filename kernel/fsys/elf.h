@@ -43,7 +43,8 @@ typedef struct {
     uint32_t p_align;       // 对齐要求
 } Elf32_Phdr;
 
-int load_and_execute_elf(vfs_node_t* elf_node) {
+// return an entry point on success, or -1 on failure
+uint32_t load_elf(vfs_node_t* elf_node) {
     if (elf_node == NULL) {
         printk("ELF node is NULL\n");
         return -1;
@@ -86,13 +87,7 @@ int load_and_execute_elf(vfs_node_t* elf_node) {
         }
     }
 
-    int (*elf_main)() = (int (*)())ehdr->e_entry;
-    int ret = elf_main();
-
-    printk("ELF program exited with code %d\n", ret);
-
-    kfree(file_buf);
-    return ret;
+    return ehdr->e_entry;
 }
 
 #endif

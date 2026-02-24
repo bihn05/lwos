@@ -24,6 +24,9 @@ KERNEL_OBJS := kernel/start.o \
 				kernel/segment.o \
 				kernel/mm/schedule.o \
 				kernel/mm/vm.o
+KERNEL_C_SRCS := $(wildcard kernel/*.c kernel/mm/*.c kernel/driver/*.c kernel/fsys/*.c)
+KERNEL_C_OBJS := $(KERNEL_C_SRCS:.c=.o)
+KERNEL_OBJS := $(KERNEL_ASM_OBJS) $(KERNEL_C_OBJS)
 SYSTEM_FILES := system.bin system.map master.img
 
 # 默认目标
@@ -52,7 +55,7 @@ kernel/mm/%.o: kernel/mm/%.s
 	$(NASM) $(NASM_FLAGS_ELF) $< -o $@
 
 # 内核C文件编译
-kernel/main.o: kernel/main.c
+kernel/%.o: kernel/%.c
 	$(GCC) $(GCC_FLAGS) -c $< -o $@
 
 # 链接内核

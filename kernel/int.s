@@ -477,7 +477,7 @@ UHINT 124
 UHINT 125
 UHINT 126
 UHINT 127
-UHINT 128
+; UHINT 128
 UHINT 129
 UHINT 130
 UHINT 131
@@ -606,3 +606,32 @@ UHINT 253
 UHINT 254
 UHINT 255
 UHINT 256
+
+extern syscall_handler
+global int_syscall
+
+int_syscall:
+	push 0
+	push 0x80
+	pushad
+	push ds
+	push es
+	push fs
+	push gs
+
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+
+	push esp
+	call syscall_handler
+	add esp, 4
+
+	pop gs
+	pop fs
+	pop es
+	pop ds
+	popad
+
+	add esp, 8
+	iret

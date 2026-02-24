@@ -80,21 +80,18 @@ void kernel_init() {
 	}
 
 	vfs_node_t* test_exec = lwfs_resolve_path((lwfs_instance_t*)vfs_root->fs_instance, "/TEST.ELF");
-	load_and_execute_elf(test_exec);
+	uint32_t entry_point = load_elf(test_exec);
+	create_user_process(entry_point);
+
+	dump_chunk((uint8_t*)0x01fff000, 1);
+
+	pit_init();
+
+	__asm volatile("sti"); // enable interrupts
 
 	while (1) {
 		__asm volatile("hlt");
 	}
-
-	init_multitasking();
-
-	create_kernel_thread(task_a);
-	create_kernel_thread(task_b);
-
-	pit_init();
-	//cheax(); // eax = 0xcafebabe
-
-	__asm volatile("sti"); // enable interrupts
 
 	bxbp();
 	cheax();

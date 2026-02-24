@@ -1,151 +1,117 @@
-// process control block
+// kernel/mm/pcb.h
 
 #ifndef _PCB_H_
 #define _PCB_H_
 
-#include <debug.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <kernel.h>
 #include <mm/km.h>
+#include <mm/vmm.h>
+#include <string.h>
+#include <descript.h>
 
-volatile uint32_t system_ticks = 0;
-
-typedef enum {
-    TASK_RUNNING,
-    TASK_READY,
-    TASK_BLOCKED,
-} task_state_t;
+#define TASK_READY   0
+#define TASK_RUNNING 1
+#define TASK_BLOCKED 2
+#define TASK_DEAD    3
 
 typedef struct {
-    uint32_t edi, esi, ebp, espf, ebx, edx, ecx, eax;
-    uint32_t eip, cs, eflags;
-} context_t;
+    uint32_t gs, fs, es, ds;                        // 手动压入的段寄存器
+    uint32_t edi, esi, ebp, esp_dummy, ebx, edx, ecx, eax; // pusha 压入的
+    uint32_t eip, cs, eflags, user_esp, user_ss;    // 由硬件或我们伪造给 iret 使用的
+} intr_frame_t;
 
-typedef struct task {
-    uint32_t esp;
-    uint32_t cr3;
-    uint32_t pid;
-    struct task* next;
-    uint32_t kernel_stack;
+typedef struct pcb {
+    uint32_t esp;               // 当前内核栈的栈顶指针 (必须放在结构体第一个位置，方便汇编调用)
+    uint32_t pid;               // 进程号
+    uint32_t state;             // 进程状态
+    uint32_t priority;          // 优先级 (可用于实现时间片多长)
+    uint32_t ticks;             // 剩余时间片
+    
+    uint32_t kernel_stack;      // 该进程专属内核栈的栈底地址
+    uint32_t page_dir_phys;     // 该进程专属的页目录物理地址 (CR3)
+    
+    struct pcb* next;           // 链表指针
+} pcb_t;
 
-    task_state_t state;
-    uint32_t sleep_ticks;
-} task_t;
+extern pcb_t* current_task;
+extern void switch_to(pcb_t* prev, pcb_t* next);
 
-task_t* current_task = 0;
-// table start
-task_t* ready_queue = 0;
+pcb_t* current_task = NULL;
+pcb_t* ready_queue = NULL; // 简单的就绪队列
 
-extern void context_switch(task_t* next);
-extern void switch_task(task_t* prev, task_t* next);
-extern void kernel_thread_entry();
+extern tss_t tss;
 
-void init_multitasking() {
-    task_t* kernel_task = (task_t*)kmalloc(sizeof(task_t));
-    printk("##KMALLOC kernel_task = 0x%08X\n", (uint32_t)kernel_task);
+pcb_t* create_user_process(uint32_t entry_point) {
+    // 1. 分配 PCB
+    pcb_t* task = (pcb_t*)kmalloc(sizeof(pcb_t));
+    memset(task, 0, sizeof(pcb_t));
+    task->pid = 100; // 假定分配一个 PID
+    task->state = TASK_READY;
+    task->ticks = 5; // 分配 5 个时间片
 
-    asm volatile("mov %%cr3, %%eax; mov %%eax, %0" : "=m"(kernel_task->cr3) :: "eax");
-    asm volatile("mov %%esp, %0" : "=r"(kernel_task->esp)); // store
+    // 2. 为该进程分配一页专属的【内核栈】
+    task->kernel_stack = (uint32_t)kmalloc(4096) + 4096; // 栈底在高地址
+    
+    // 3. 为该进程分配一页专属的【用户栈】(在虚拟内存高处)
+    uint32_t user_stack_vaddr = 0xBFFFF000;
+    vmm_alloc_map_region(user_stack_vaddr, 4096, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+    uint32_t user_stack_top = user_stack_vaddr + 4096;
 
-    kernel_task->pid = 0;
-    kernel_task->next = kernel_task;
-    kernel_task->state = TASK_READY;
+    // 4. 精心布置内核栈，伪造中断现场
+    // 将栈顶指针下移一个 intr_frame_t 的大小
+    task->esp = task->kernel_stack - sizeof(intr_frame_t);
+    intr_frame_t* frame = (intr_frame_t*)task->esp;
 
-    current_task = kernel_task;
-    ready_queue = kernel_task;
+    // 清零通用寄存器
+    memset(frame, 0, sizeof(intr_frame_t));
+
+    // 填充用户态的段寄存器 (RPL=3)
+    frame->ds = USER_DS;
+    frame->es = USER_DS;
+    frame->fs = USER_DS;
+    frame->gs = USER_DS;
+
+    // 填充 iret 返回时所需的特权级切换信息
+    frame->user_ss = USER_DS;
+    frame->user_esp = user_stack_top; // 进程在用户态使用的栈
+    
+    // EFLAGS: 开启中断 (IF=1, 第9位) | 预留位 (第1位必须为1)
+    frame->eflags = 0x00000202; 
+    
+    frame->cs = USER_CS;              // 目标特权级代码段
+    frame->eip = entry_point;         // 目标程序的执行入口
+
+    // 将新任务加入队列
+    task->next = ready_queue;
+    ready_queue = task;
+
+    return task;
 }
-void task_starter(void (*entry_point)()) {
-    __asm volatile("sti"); // enable interrupts
-    entry_point();
-    while (1);
-}
-void create_kernel_thread(void (*entry_point)()) {
-    task_t* new_task = (task_t*)kmalloc(sizeof(task_t));
 
-    // alloc kstack 4kb
-    uint8_t* stack_base = (uint8_t*)kmalloc(4096);
-
-    // calc stack top
-    uint32_t* stack_ptr = (uint32_t*)(((uint32_t)stack_base + 4096) & ~0xF);
-
-    *(--stack_ptr) = (uint32_t)kernel_thread_entry; // context switch entry point
-    *(--stack_ptr) = 0; // pop ebp
-    *(--stack_ptr) = (uint32_t)entry_point; // pop ebx
-    *(--stack_ptr) = 0; // pop esi
-    *(--stack_ptr) = 0; // pop edi
-
-    new_task->esp = (uint32_t)stack_ptr;
-    new_task->cr3 = current_task->cr3;
-    new_task->kernel_stack = (uint32_t)stack_base;
-    new_task->state = TASK_READY;
-
-    static uint32_t next_pid = 1;
-    new_task->pid = next_pid++;
-
-    new_task->next = ready_queue;
-
-    printk("     pid = %d\n", new_task->pid);
-    printk("new task = 0x%08X\n", (uint32_t)new_task);
-    printk("     esp = 0x%08X\n", new_task->esp);
-    printk("    next = 0x%08X\n", (uint32_t)new_task->next);
-    printk("  krnstk = 0x%08X\n", new_task->kernel_stack);
-    printk("     cr3 = 0x%08X\n", new_task->cr3);
-
-    task_t* temp = ready_queue;
-    while (temp->next != ready_queue)temp = temp->next;
-    temp->next = new_task;
-    // better use double directions chain table
-}
 void schedule() {
-    if (!ready_queue || !current_task) return;
+    if (!current_task || !ready_queue) return;
 
-    task_t* prev = current_task;
-    task_t* next = current_task->next;
+    current_task->ticks--;
+    if (current_task->ticks > 0) return; // 时间片没用完，继续跑
 
-    while (next->state != TASK_READY && next != prev) {
-        next = next->next;
-    }
+    // 简单的轮转调度 (Round-Robin)
+    pcb_t* next_task = current_task->next;
+    if (!next_task) next_task = ready_queue; // 循环回到头
 
-    if (prev != next) {
-        current_task = next;
-        switch_task(prev, next);
-    }
-}
+    if (current_task != next_task) {
+        current_task->state = TASK_READY;
+        next_task->state = TASK_RUNNING;
+        next_task->ticks = 5; // 重置时间片
 
-void sleep(uint32_t ticks) {
-    if (ticks == 0) return;
+        // 【极为关键的 TSS 更新】
+        // 告诉 CPU：下次这个 next_task 被中断打断时，请把现场保存到它的专属内核栈里！
+        tss.esp0 = next_task->kernel_stack;
 
-    current_task->sleep_ticks = system_ticks + ticks;
-    current_task->state = TASK_BLOCKED;
-    schedule();
-}
-void do_timer_tick() {
-    system_ticks++;
+        pcb_t* prev = current_task;
+        current_task = next_task;
 
-    if (!ready_queue) return;
-
-    // wake up tasks
-    task_t* temp = ready_queue;
-    do {
-        if (temp->state == TASK_BLOCKED && temp->sleep_ticks <= system_ticks) {
-            temp->state = TASK_READY;
-        }
-        temp = temp->next;
-    } while (temp != ready_queue);
-
-    schedule();
-}
-void task_a() {
-    while (1) {
-        printk("PI=%f\n", 3.14159265358979323846);
-        sleep(314);
-    }
-}
-void task_b() {
-    while (1) {
-        printk(" E=%f\n", 2.71828182845904523536);
-        sleep(272);
+        // 切换上下文
+        switch_to(prev, next_task);
     }
 }
 

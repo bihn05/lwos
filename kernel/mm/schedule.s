@@ -56,31 +56,31 @@ switch_task:
 
 	ret
 
-global timer_schedule
-extern do_timer_tick
+global switch_to
+switch_to:
+    ; 此时栈里是: [返回地址] [prev指针] [next指针]
+    
+    ; 1. 保存当前任务 (prev) 的环境
+    push esi
+    push edi
+    push ebx
+    push ebp
 
-timer_schedule:
-	pusha
-	
-	push ds
-	push es
-	push fs
-	push gs
+    mov eax, [esp + 20]     ; 获取 prev 指针 (4个push占16字节 + 返回地址4字节)
+    mov [eax], esp          ; 把当前的 esp 存入 prev->esp (结构体第一个成员)
 
-	mov ax, 0x10
-	mov ds, ax
-	mov es, ax
+    ; 2. 切换到下一个任务 (next) 的环境
+    mov eax, [esp + 24]     ; 获取 next 指针
+    mov esp, [eax]          ; 把 next->esp 强行赋予硬件 ESP 寄存器！(栈在此刻被彻底偷换)
 
-	mov al, 0x20
-	out 0x20, al
+    ; (可选) 如果每个进程有独立的页表，在这里加载 next 的 CR3
+    ; mov eax, [eax + 20]   ; 假设 page_dir_phys 偏移是 20
+    ; mov cr3, eax
 
-	call do_timer_tick
+    ; 3. 恢复 next 任务的环境
+    pop ebp
+    pop ebx
+    pop edi
+    pop esi
 
-	pop gs
-	pop fs
-	pop es
-	pop ds
-
-	popa
-
-	iret
+    ret
