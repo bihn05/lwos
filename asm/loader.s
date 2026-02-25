@@ -64,7 +64,7 @@ detect_mem:
 	mov ecx, 24
 	int 0x15
 	jc mem_err
-	add di, cx
+	add di, 20
 	inc word [0x7e00]
 	cmp ebx, 0
 	jnz .next

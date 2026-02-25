@@ -5,7 +5,8 @@
 #include <interrupt.h>
 #include <pic.h>
 #include <printk.h>
-#include <mm/pmm.h>
+#include <mm.h>
+#include <disk.h>
 
 video_t video;
 void display_banner() {
@@ -32,6 +33,13 @@ void kernel_init() {
     display_banner();
 
     pmm_init();
+    kheap_init();
+
+    ata_init();
+    ata_detect_drives();
+
+    uint64_t* test_ptr = (uint64_t*)kmalloc(1024);
+    test_ptr[0] = 0;
 
     //__asm__ volatile ("sti");
 
