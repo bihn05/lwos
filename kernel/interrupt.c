@@ -99,10 +99,10 @@ void interrupt_handler(int_registers_t* regs) {
     }
 }
 
-extern video_t video; 
+extern video_t video;
+extern void schedule();
 
 void timer_handler(int_registers_t* regs) {
-    
-
     outb(0x20, 0x20);
+    schedule();
 }

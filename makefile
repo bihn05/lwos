@@ -72,6 +72,7 @@ $(MASTER_IMG): $(BIN_TARGETS) $(SYSTEM_BIN) $(SYSTEM_MAP)
 	$(DD) bs=512 count=8192 seek=8 if=$(BUILD_DIR)/fat.bin of=$(MASTER_IMG) conv=notrunc
 	$(DD) bs=512 count=512 seek=8200 if=$(BUILD_DIR)/clsheap.bin of=$(MASTER_IMG) conv=notrunc
 	$(DD) bs=512 count=200 seek=8728 if=$(SYSTEM_BIN) of=$(MASTER_IMG) conv=notrunc
+	$(DD) bs=512 count=8 seek=8928 if=sim/test.txt of=$(MASTER_IMG) conv=notrunc
 
 # 静态模式规则：处理 asm/ 下的二进制文件
 $(BIN_TARGETS): $(BUILD_DIR)/%.bin: $(ASM_DIR)/%.s
