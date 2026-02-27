@@ -54,5 +54,9 @@ task_struct_t* thread_create(char* name, int priority, thread_func_t function, v
 void task_a(void* arg);
 void task_b(void* arg);
 void schedule();
+extern task_struct_t* main_thread;
+extern task_struct_t* thread_a;
+extern task_struct_t* thread_b;
+void init_multitasking();
 
 #endif

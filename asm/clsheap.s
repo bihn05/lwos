@@ -30,5 +30,4 @@ dd 0xffffffff ; 26
 dd 0xffffffff ; 27 test.txt
 dd 29 ; 28 test.elf
 dd 30 ; 29
-dd 31 ; 30
-dd 0xffffffff ; 31
+dd 0xffffffff ; 30

@@ -9,6 +9,8 @@
 #include <disk.h>
 #include <fsys/lwfs.h>
 #include <task.h>
+#include <tools.h>
+#include <task/elf.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
@@ -24,8 +26,6 @@ void display_banner() {
 	printk("                                                  \n");
 	printk("   CODE is COSTARICA                              \n\n");
 }
-task_struct_t* thread_a = NULL;
-task_struct_t* thread_b = NULL;
 void kernel_init() {
     video.frame_buf = (uint8_t*)0xa0000;
     writereg_video(g_640x480x2);
@@ -33,10 +33,6 @@ void kernel_init() {
 
     gdt_tss_init();
     idt_init();
-    timer_init(100);
-
-    display_banner();
-
     pmm_init();
     kheap_init();
 
@@ -59,18 +55,34 @@ void kernel_init() {
 		printk("No ATA devices found, skipping LWFS mount.\n");
 	}
 
-    // 2. 组成环形链表 (Round-Robin 队列)
-    thread_a = thread_create("Task_A", 1, task_a, NULL);
-    thread_b = thread_create("Task_B", 1, task_b, NULL);
+    vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
 
-    // 3. 设定当前运行的线程
-    current_thread = thread_a;
+    uint8_t* test_buf = (uint8_t*)kmalloc(512);
+    int bytes_read = test_node->ops->read(test_node, 0, 512, test_buf);
+    printk("Read %d bytes.\n", bytes_read);
+    dump_chunk(test_buf, 1);
+    uint64_t entry_point = load_elf(test_node);
+    printk("ELF entry point: 0x%08X%08X\n", (uint32_t)(entry_point >> 32), (uint32_t)(entry_point & 0xFFFFFFFF));
 
-    while (1);
+    dump_chunk((void*)entry_point, 1);
 
-    __asm__ volatile ("sti");
+    int (*entry_func)() = (int (*)())entry_point;
+    uint32_t result = entry_func();
+    printk("ELF returned: 0x%08X\n", result);
 
     while (1) {
         asm volatile ("hlt");
     }
+
+    thread_a = thread_create("Task_A", 1, task_a, NULL);
+    thread_b = thread_create("Task_B", 1, task_b, NULL);
+
+    current_thread = thread_a;
+
+    __asm__ volatile ("cli");
+    init_multitasking();
+    timer_init(100);
+
+    __asm__ volatile ("sti");
+
 }

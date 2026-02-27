@@ -21,7 +21,7 @@ task_struct_t* thread_create(char* name, int priority, thread_func_t function, v
     // 1. 分配一个 4KB 页作为 TCB 和栈的混合体
     task_struct_t* thread = (task_struct_t*)kmalloc(4096);
     if (!thread) return NULL;
-    
+
     memset(thread, 0, 4096);
 
     // 2. 初始化 TCB 基础属性
@@ -89,4 +89,23 @@ void task_b(void* arg) {
         printk("B");
         for(volatile int i=0; i<1000000; i++); 
     }
+}
+task_struct_t* main_thread;
+
+task_struct_t* thread_a = NULL;
+task_struct_t* thread_b = NULL;
+void init_multitasking() {
+    // 为当前正在运行的 kernel_init 申请一个 TCB
+    main_thread = (task_struct_t*)kmalloc(4096);
+    main_thread->pid = 0;
+    strcpy(main_thread->name, "main");
+    main_thread->state = TASK_RUNNING;
+    // 注意：不需要为它伪造栈，因为此时 RSP 已经是指向正确的内核栈了
+    
+    current_thread = main_thread;
+
+    // 连成环：main -> A -> B -> main
+    main_thread->next = thread_a;
+    thread_a->next = thread_b;
+    thread_b->next = main_thread;
 }

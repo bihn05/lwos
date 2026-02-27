@@ -34,5 +34,6 @@ void pmm_reserve_region(uint64_t start_addr, uint64_t size);
 void pmm_reserve_page(uint64_t addr);
 uint64_t pmm_alloc_page();
 void pmm_free_page(uint64_t phy_addr);
+void print_pmm_info();
 
 #endif

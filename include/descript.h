@@ -7,7 +7,6 @@
 
 #pragma pack(push, 1)
 
-// 标准 8 字节 GDT 条目
 typedef struct {
     uint16_t limit_low;
     uint16_t base_low;
@@ -15,28 +14,26 @@ typedef struct {
     uint8_t  access;
     uint8_t  granularity;
     uint8_t  base_high;
-} gdt_entry_t;
+} gdt_entry_t; // gdt
 
-// 64 位 TSS 专用的 16 字节描述符
 typedef struct {
     gdt_entry_t low;
     uint32_t    base_upper;
     uint32_t    reserved;
-} gdt_tss_entry_t;
+} gdt_tss_entry_t; // tss
 
 typedef struct {
     uint16_t limit;
-    uint64_t base; // 必须是 64 位地址
-} gdtr_t;
+    uint64_t base;
+} gdtr_t; // GDT register
 
-// 64 位 TSS 结构 (104字节)
 typedef struct {
     uint32_t reserved0;
-    uint64_t rsp0; // 特权级切换至 Ring 0 时的栈指针
+    uint64_t rsp0;
     uint64_t rsp1;
     uint64_t rsp2;
     uint64_t reserved1;
-    uint64_t ist[7]; // 中断栈表
+    uint64_t ist[7]; // interrupt stack table
     uint64_t reserved2;
     uint16_t reserved3;
     uint16_t iomap_base;

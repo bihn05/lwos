@@ -9,6 +9,7 @@ LIB_DIR     := lib
 ASM_DIR     := asm
 KERNEL_DIR  := kernel
 SIM_DIR     := sim
+EXTERNAL    := external
 
 # 2. 工具定义
 NASM     := nasm
@@ -48,6 +49,8 @@ SYSTEM_BIN := $(BUILD_DIR)/system.bin
 SYSTEM_MAP := $(BUILD_DIR)/system.map
 MASTER_IMG := $(SIM_DIR)/master.img
 
+EXTERNAL_FILES := $(EXTERNAL)/test.txt
+
 # ==========================================
 # 5. 构建规则
 # ==========================================
@@ -72,7 +75,8 @@ $(MASTER_IMG): $(BIN_TARGETS) $(SYSTEM_BIN) $(SYSTEM_MAP)
 	$(DD) bs=512 count=8192 seek=8 if=$(BUILD_DIR)/fat.bin of=$(MASTER_IMG) conv=notrunc
 	$(DD) bs=512 count=512 seek=8200 if=$(BUILD_DIR)/clsheap.bin of=$(MASTER_IMG) conv=notrunc
 	$(DD) bs=512 count=200 seek=8728 if=$(SYSTEM_BIN) of=$(MASTER_IMG) conv=notrunc
-	$(DD) bs=512 count=8 seek=8928 if=sim/test.txt of=$(MASTER_IMG) conv=notrunc
+	$(DD) bs=512 count=8 seek=8928 if=$(EXTERNAL)/test.txt of=$(MASTER_IMG) conv=notrunc
+	$(DD) bs=512 count=24 seek=8936 if=$(EXTERNAL)/build/test.elf of=$(MASTER_IMG) conv=notrunc
 
 # 静态模式规则：处理 asm/ 下的二进制文件
 $(BIN_TARGETS): $(BUILD_DIR)/%.bin: $(ASM_DIR)/%.s
@@ -96,6 +100,8 @@ $(SYSTEM_BIN): $(BUILD_DIR)/kernel.bin
 
 $(SYSTEM_MAP): $(BUILD_DIR)/kernel.bin
 	$(NM) $< | sort > $@
+
+# process external codes
 
 run: build
 	cd $(SIM_DIR) && $(BOCHS) -q

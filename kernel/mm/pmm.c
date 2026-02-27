@@ -11,7 +11,6 @@ void pmm_init() {
     uint64_t max_memory = 0;
 
     // 计算最大物理内存边界
-    printk("--- Physical Memory Map (ARDS) ---\n");
     for (int i = 0; i < ards_count; i++) {
         // 打印每一项的详情
         // %x 打印 32 位，我们将 64 位拆开显示以确保在实体机能看全
@@ -28,7 +27,6 @@ void pmm_init() {
             max_memory = region_end;
         }
     }
-    printk("----------------------------------\n");
 
     pmm_manager.total_pages = max_memory / PAGE_SIZE;
     pmm_manager.free_pages = 0;
@@ -120,4 +118,31 @@ void pmm_free_page(uint64_t phy_addr) {
             pmm_manager.free_pages++;
         }
     }
+}
+
+void print_pmm_info() {
+    uint32_t ards_count = *(uint32_t*)0x7e00;
+    ards_t* ards_buffer = (ards_t*)0x7e10;
+
+    uint64_t max_memory = 0;
+
+    for (int i = 0; i < ards_count; i++) {
+        // 打印每一项的详情
+        // %x 打印 32 位，我们将 64 位拆开显示以确保在实体机能看全
+        uint32_t base_low = (uint32_t)(ards_buffer[i].base_addr & 0xFFFFFFFF);
+        uint32_t base_high = (uint32_t)(ards_buffer[i].base_addr >> 32);
+        uint32_t len_low = (uint32_t)(ards_buffer[i].length & 0xFFFFFFFF);
+        uint32_t type = ards_buffer[i].type;
+
+        printk("[%02d] Base:0x%08x%08x Len:0x%08x Type:%d\n", 
+               i, base_high, base_low, len_low, type);
+
+        uint64_t region_end = ards_buffer[i].base_addr + ards_buffer[i].length;
+        if (ards_buffer[i].type == ARDS_TYPE_USABLE && region_end > max_memory) {
+            max_memory = region_end;
+        }
+    }
+
+
+    printk("Total Memory detected: %d MB\n", (uint32_t)(max_memory / (1024 * 1024)));
 }
