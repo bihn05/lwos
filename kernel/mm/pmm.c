@@ -146,3 +146,60 @@ void print_pmm_info() {
 
     printk("Total Memory detected: %d MB\n", (uint32_t)(max_memory / (1024 * 1024)));
 }
+// 分配 count 个连续的物理页 (用于 DMA 或大块内存)
+// 返回值: 连续物理内存的首地址 (物理地址)，失败返回 0
+uint64_t pmm_alloc_contiguous_pages(uint64_t count) {
+    if (count == 0) return 0;
+
+    uint64_t start_page = 0;
+    uint64_t contiguous_free = 0;
+
+    // 遍历所有物理页，寻找连续的 count 个空闲页
+    // 提示: 为了避开低地址历史遗留问题，你也可以让 i 从 4096 (即 16MB) 开始
+    for (uint64_t i = 0; i < pmm_manager.total_pages; i++) {
+        
+        // 检查当前页是否空闲 (位图对应位为 0)
+        if (!(pmm_bitmap[i / 8] & (1 << (i % 8)))) {
+            if (contiguous_free == 0) {
+                start_page = i; // 记录这块连续区域的起点
+            }
+            contiguous_free++;
+
+            // 找够了目标数量！
+            if (contiguous_free == count) {
+                // 1. 将这些页在位图中标记为已占用
+                for (uint64_t j = start_page; j < start_page + count; j++) {
+                    pmm_bitmap[j / 8] |= (1 << (j % 8));
+                }
+                // 2. 更新系统空闲页统计
+                pmm_manager.free_pages -= count;
+                
+                // 3. 返回真实的物理基地址
+                return start_page * PAGE_SIZE; 
+            }
+        } else {
+            // 遇到被占用的页，连续性被打破，计数器清零，重新开始寻找
+            contiguous_free = 0;
+        }
+    }
+
+    printk("PMM: OUT OF CONTIGUOUS MEMORY (Requested %d pages)!\n", (uint32_t)count);
+    return 0; // 失败返回 0
+}
+
+// 释放 count 个连续的物理页
+void pmm_free_contiguous_pages(uint64_t phy_addr, uint64_t count) {
+    if (phy_addr % PAGE_SIZE != 0 || count == 0) return;
+
+    uint64_t start_page = phy_addr / PAGE_SIZE;
+
+    for (uint64_t i = start_page; i < start_page + count; i++) {
+        if (i < pmm_manager.total_pages) {
+            // 如果该页是占用状态，则释放它
+            if (pmm_bitmap[i / 8] & (1 << (i % 8))) {
+                pmm_bitmap[i / 8] &= ~(1 << (i % 8));
+                pmm_manager.free_pages++;
+            }
+        }
+    }
+}

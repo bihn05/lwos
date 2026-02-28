@@ -9,6 +9,7 @@
 #define PAGE_PRESENT 0x1
 #define PAGE_RW      0x2
 #define PAGE_USER    0x4
+#define PAGE_DISABLE_CACHE 0x10
 
 // 64位地址切分宏：每次取 9 位 (0x1FF)
 #define PML4_INDEX(addr) (((uint64_t)(addr) >> 39) & 0x1FF)

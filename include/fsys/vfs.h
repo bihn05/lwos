@@ -18,6 +18,7 @@ typedef struct {
     int (*read)(struct vfs_node* node, uint32_t offset, uint32_t size, uint8_t* buffer);
     int (*write)(struct vfs_node* node, uint32_t offset, uint32_t size, uint8_t* buffer);
     struct vfs_node* (*finddir)(struct vfs_node* dir, const char* name);
+    int (*create)(struct vfs_node* dir, const char* name, uint32_t flags);
 } vfs_ops_t;
 
 // VFS 节点结构：内核眼中看到的文件/目录实体

@@ -76,5 +76,13 @@ vfs_node_t* lwfs_finddir(struct vfs_node* dir_node, const char* target_name);
 static int lwfs_read_fat_entry_by_idx(lwfs_instance_t* inst, uint32_t index, fat_t* out_entry);
 void lwfs_format_filename(fat_t* emtry, char* out_name);
 vfs_node_t* lwfs_resolve_path(lwfs_instance_t* inst, const char* path);
+uint32_t lwfs_allocate_cluster(lwfs_instance_t* inst);
+int lwfs_write_fat_entry_by_idx(lwfs_instance_t* inst, uint32_t index, fat_t* in_entry);
+uint32_t lwfs_alloc_fat_entry(lwfs_instance_t* inst);
+uint32_t lwfs_link_new_entry(lwfs_instance_t* inst, uint32_t parent_idx, fat_t* new_entry_data);
+uint32_t lwfs_alloc_and_link_cluster(lwfs_instance_t* inst, uint32_t prev_cluster);
+int lwfs_write_node(struct vfs_node* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+int lwfs_write_cluster(lwfs_instance_t* inst, uint32_t lwfs_cluster, uint8_t* buffer);
+int lwfs_create(struct vfs_node* dir_node, const char* name, uint32_t flags);
 
 #endif

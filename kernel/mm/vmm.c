@@ -75,4 +75,6 @@ void vmm_alloc_map_region(uint64_t vaddr, uint64_t size, uint32_t flags) {
         }
         map_page(current_addr, phys_page, flags);
     }
+
+    asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");
 }

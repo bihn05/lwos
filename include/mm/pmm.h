@@ -35,5 +35,7 @@ void pmm_reserve_page(uint64_t addr);
 uint64_t pmm_alloc_page();
 void pmm_free_page(uint64_t phy_addr);
 void print_pmm_info();
+uint64_t pmm_alloc_contiguous_pages(uint64_t count);
+void pmm_free_contiguous_pages(uint64_t phy_addr, uint64_t count);
 
 #endif

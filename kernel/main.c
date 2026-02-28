@@ -11,6 +11,8 @@
 #include <task.h>
 #include <tools.h>
 #include <task/elf.h>
+#include <driver/pci.h>
+#include <network.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
@@ -54,13 +56,22 @@ void kernel_init() {
 	} else {
 		printk("No ATA devices found, skipping LWFS mount.\n");
 	}
-
     vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
 
+    /*
     uint8_t* test_buf = (uint8_t*)kmalloc(512);
     int bytes_read = test_node->ops->read(test_node, 0, 512, test_buf);
     printk("Read %d bytes.\n", bytes_read);
     dump_chunk(test_buf, 1);
+
+    int create_result = vfs_root->ops->create(vfs_root, "MODIFY.TXT", VFS_FLAG_FILE);
+    vfs_node_t* modify_test = vfs_root->ops->finddir(vfs_root, "MODIFY.TXT");
+    const char* content = "Hello, LWOS!";
+    modify_test->ops->write(modify_test, 0, strlen(content), (uint8_t*)content);
+    memset(test_buf, 0, 512);
+    modify_test->ops->read(modify_test, 0, 512, test_buf);
+    printk("Content of MODIFY.TXT: %s\n", test_buf); 
+
     uint64_t entry_point = load_elf(test_node);
     printk("ELF entry point: 0x%08X%08X\n", (uint32_t)(entry_point >> 32), (uint32_t)(entry_point & 0xFFFFFFFF));
 
@@ -68,7 +79,40 @@ void kernel_init() {
 
     int (*entry_func)() = (int (*)())entry_point;
     uint32_t result = entry_func();
-    printk("ELF returned: 0x%08X\n", result);
+    printk("ELF returned: 0x%08X\n", result); */
+
+    pci_check_all_buses();
+    pci_device_t network_dev;
+    rtl8168_t my_nic;
+    /*
+    if (pci_find_device_by_class(0x02, 0x00, &network_dev)) {
+        printk("NIC Found at %02x:%02x.%d | Vendor: %04x, Device: %04x\n", 
+               network_dev.bus, network_dev.slot, network_dev.func, 
+               network_dev.vendor_id, network_dev.device_id);
+        rtl8168_init_and_read_mac(&network_dev, &my_nic);
+        
+    } else {
+        printk("No Ethernet Controller found!\n");
+    }*/
+
+    pci_find_and_inspect_bridge_for_bus(8);
+
+    if (!pci_find_device_by_class(0x02, 0x00, &network_dev))
+        while (1) asm volatile ("hlt");
+
+    printk("NIC Found at %02x:%02x.%d | Vendor: %04x, Device: %04x\n", 
+    network_dev.bus, network_dev.slot, network_dev.func, 
+    network_dev.vendor_id, network_dev.device_id);
+    rtl8168_init_and_read_mac(&network_dev, &my_nic);
+
+    printk("Entering network polling loop. Waiting for packets...\n");
+
+    while (1) {
+        rtl8168_poll_rx(&my_nic);
+    
+    // 如果你有键盘驱动，可以加个按键退出逻辑
+    // if (kb_hit()) break; 
+    }
 
     while (1) {
         asm volatile ("hlt");
