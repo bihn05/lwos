@@ -66,7 +66,7 @@ disk_err:
 	call print
 	hlt
 
-str_1: db 'MBR OK', 0
+str_1: db 'LWOS MBR OK ', 0
 str_2: db 'MEDIA ERR', 0
 
 times 510-($-$$) db 0

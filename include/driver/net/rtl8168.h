@@ -39,7 +39,7 @@ typedef struct {
 #define DESC_LS   (1 << 28) // Last Segment (包的结束)
 
 // 我们设定环的大小，单线程轮询不需要太大，16 到 32 个足够了
-#define NUM_RX_DESC 16
+#define NUM_RX_DESC 128
 #define NUM_TX_DESC 16
 #define RX_BUFFER_SIZE 2048 // 以太网帧最大 1518，2KB 足够
 

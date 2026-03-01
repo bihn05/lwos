@@ -104,7 +104,6 @@ void kernel_init() {
     network_dev.bus, network_dev.slot, network_dev.func, 
     network_dev.vendor_id, network_dev.device_id);
     rtl8168_init_and_read_mac(&network_dev, &my_nic);
-
     printk("Entering network polling loop. Waiting for packets...\n");
 
     while (1) {
@@ -117,6 +116,7 @@ void kernel_init() {
     while (1) {
         asm volatile ("hlt");
     }
+
 
     thread_a = thread_create("Task_A", 1, task_a, NULL);
     thread_b = thread_create("Task_B", 1, task_b, NULL);

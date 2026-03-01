@@ -36,7 +36,7 @@ void rtl8168_init_and_read_mac(pci_device_t *slot, rtl8168_t *nic) {
     // 2. 开启 Memory Space 与 Bus Master，并严格验证
     // ==========================================
     uint16_t cmd = pci_config_read_word(bus, dev, func, 0x04);
-    cmd |= (1 << 2) | (1 << 1); // Bit 2: Bus Master, Bit 1: Memory Space
+    cmd |= (1 << 2) | (1 << 1) | (1 << 0); // Bit 2: Bus Master, Bit 1: Memory Space
     pci_config_write_word(bus, dev, func, 0x04, cmd);
     
     // 写后读：实体机上极其关键的一步
@@ -63,7 +63,7 @@ void rtl8168_init_and_read_mac(pci_device_t *slot, rtl8168_t *nic) {
     // 3. 通过 I/O 端口复位网卡
     // ==========================================
     printk("  -> Resetting via I/O Port...\n");
-    outb(io_base + 0x37, 0x10); // 写复位指令
+    outb(0x10, io_base + 0x37); // 写复位指令
     
     int timeout = 10000;
     while ((inb(io_base + 0x37) & 0x10) && timeout > 0) {
@@ -72,9 +72,9 @@ void rtl8168_init_and_read_mac(pci_device_t *slot, rtl8168_t *nic) {
     }
     
     if (timeout == 0) {
-        printk("  [!] I/O Reset Timeout! The card is truly unresponsive.\n");
+        printk("  [!] I/O Reset Timeout!\n");
     } else {
-        printk("  -> I/O Reset COMPLETE! Hardware is ALIVE!\n");
+        printk("  -> I/O Reset COMPLETE!\n");
     }
 
     // ==========================================
@@ -91,25 +91,43 @@ void rtl8168_init_and_read_mac(pci_device_t *slot, rtl8168_t *nic) {
     // ==========================================
     // 4. 构建 DMA 描述符环并通知网卡
     // ==========================================
+    uint16_t io = io_base;
+    nic->io_base = io;
     if (!rtl8168_init_rings(nic)) {
+        printk("  [!] Failed to initialize DMA rings!\n");
         return; // 分配内存失败，直接退出
     }
 
     // ==========================================
     // 5. 配置接收规则，并最终开启 Rx/Tx 引擎
     // ==========================================
-    uint16_t io = nic->io_base;
     outb(0xC0, io + 0x50);
+    printk("  -> Unlock config registers: 0x%02x\n", inb(io + 0x50));
 
-    // 允许接收单播(物理匹配)和广播包，允许超大帧
-    outl(0x0E0A, io + 0x44); 
+    // RxConfig = RXFTH: unlimited, MXDMA: unlimited, AAP: set (promisc. mode set)
+    outl(0x0000E70F, io + 0x44); 
+    printk("  -> Rx Filter Config: 0x%08x\n", inl(io + 0x44));
     // 设置接收最大包长
     outw(16383, io + 0xDA);
+    printk("  -> Rx Max Size: %d bytes\n", inw(io + 0xDA));
 
     // 开启 MAC 层的 Rx 和 Tx
     outb(0x0C, io + 0x37); 
+    printk("  -> MAC Rx/Tx Enabled: 0x%02x\n", inb(io + 0x37));
+    outw(0, io + 0x3C);
+    printk("  -> Tx Config: 0x%04x\n", inw(io + 0x3C));
 
     outb(0x00, io + 0x50); // 锁定
+    printk("  -> Lock config registers: 0x%02x\n", inb(io + 0x50));
 
     printk("  => RTL8168 is fully operational via PIO and DMA!\n");
+
+    uint32_t test = pci_config_read_word(bus, dev, func, 0x04);
+    printk("  -> Final Command Reg Check: 0x%04x\n", test);
+
+    printk("  -> ISR Status: 0x%04x\n", inw(io + 0x3E));
+    printk("  -> PHY Status: 0x%02x\n", inb(io + 0x6C));
+    printk("  -> C+ Command Reg: 0x%04x\n", inw(io + 0xE0));
+    printk("  -> Rx Desc Base Low: 0x%08x\n", inl(io + 0xE4));
+    printk("  -> Tx Desc Base Low: 0x%08x\n", inl(io + 0x20));
 }
