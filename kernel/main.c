@@ -13,6 +13,7 @@
 #include <task/elf.h>
 #include <driver/pci.h>
 #include <network.h>
+#include <mm/proc.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
@@ -37,7 +38,8 @@ void kernel_init() {
     idt_init();
     pmm_init();
     kheap_init();
-
+    uint64_t user_pm4 = create_user_address_space();
+    tss_late_init(user_pm4);
     ata_init();
     ata_detect_drives();
 
@@ -56,31 +58,71 @@ void kernel_init() {
 	} else {
 		printk("No ATA devices found, skipping LWFS mount.\n");
 	}
-    vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
-
     /*
-    uint8_t* test_buf = (uint8_t*)kmalloc(512);
-    int bytes_read = test_node->ops->read(test_node, 0, 512, test_buf);
-    printk("Read %d bytes.\n", bytes_read);
-    dump_chunk(test_buf, 1);
-
     int create_result = vfs_root->ops->create(vfs_root, "MODIFY.TXT", VFS_FLAG_FILE);
     vfs_node_t* modify_test = vfs_root->ops->finddir(vfs_root, "MODIFY.TXT");
     const char* content = "Hello, LWOS!";
     modify_test->ops->write(modify_test, 0, strlen(content), (uint8_t*)content);
     memset(test_buf, 0, 512);
     modify_test->ops->read(modify_test, 0, 512, test_buf);
-    printk("Content of MODIFY.TXT: %s\n", test_buf); 
+    printk("Content of MODIFY.TXT: %s\n", test_buf); */
 
-    uint64_t entry_point = load_elf(test_node);
+    vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
+
+    uint64_t entry_point = load_elf(user_pm4, test_node);
     printk("ELF entry point: 0x%08X%08X\n", (uint32_t)(entry_point >> 32), (uint32_t)(entry_point & 0xFFFFFFFF));
 
-    dump_chunk((void*)entry_point, 1);
+    //dump_chunk((void*)entry_point, 1);
 
-    int (*entry_func)() = (int (*)())entry_point;
-    uint32_t result = entry_func();
-    printk("ELF returned: 0x%08X\n", result); */
+    // vmm_debug_page((uint64_t)user_stack-8);
 
+    uint64_t actual_entry = (uint64_t)pt_get_pte(user_pm4, entry_point, 0, 0);
+    printk("Entry point PTE: 0x%08X%08X\n", (uint32_t)(actual_entry >> 32), (uint32_t)(actual_entry & 0xFFFFFFFF));
+
+    if (!map_user_stack(user_pm4, USER_STACK_TOP, USER_STACK_SIZE)) {
+        printk("Failed to map user stack\n");
+        while (1) asm volatile ("hlt");
+    }
+    // 切到目标进程地址空间
+    asm volatile("mov %0, %%cr3" : : "r"(user_pm4) : "memory");
+
+    __asm__ volatile (
+        "mov $0x23, %%ax \n"
+        "mov %%ax, %%ds \n"
+        "mov %%ax, %%es \n"
+        "mov %%ax, %%fs \n"
+        "mov %%ax, %%gs \n"
+
+        "pushq $0x23 \n"
+        "pushq %0 \n"
+        "pushq $0x202 \n"
+        "pushq $0x1b \n"
+        "pushq %1 \n"
+        "iretq \n"
+        :
+        : "r"(USER_STACK_TOP), "r"(entry_point)
+        : "memory", "ax"
+    ); 
+
+    while (1) {
+        asm volatile ("hlt");
+    }
+
+    thread_a = thread_create("Task_A", 1, (thread_func_t)entry_point, NULL);
+    //thread_b = thread_create("Task_B", 1, task_b, NULL);
+
+    current_thread = thread_a;
+
+    init_multitasking();
+    timer_init(100);
+
+    __asm__ volatile ("sti");
+
+    while (1) {
+        asm volatile ("hlt");
+    }
+
+    /*
     pci_check_all_buses();
     pci_device_t network_dev;
     rtl8168_t my_nic;
@@ -94,6 +136,8 @@ void kernel_init() {
     } else {
         printk("No Ethernet Controller found!\n");
     }*/
+
+    /*
 
     pci_find_and_inspect_bridge_for_bus(8);
 
@@ -111,22 +155,6 @@ void kernel_init() {
     
     // 如果你有键盘驱动，可以加个按键退出逻辑
     // if (kb_hit()) break; 
-    }
-
-    while (1) {
-        asm volatile ("hlt");
-    }
-
-
-    thread_a = thread_create("Task_A", 1, task_a, NULL);
-    thread_b = thread_create("Task_B", 1, task_b, NULL);
-
-    current_thread = thread_a;
-
-    __asm__ volatile ("cli");
-    init_multitasking();
-    timer_init(100);
-
-    __asm__ volatile ("sti");
+    }*/
 
 }

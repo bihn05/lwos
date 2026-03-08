@@ -3,79 +3,72 @@
 pmm_manager_t pmm_manager;
 uint8_t* pmm_bitmap; // 位图指针
 
-void pmm_init() {
-    // 获取 loader 阶段探测的内存信息 (假设依然存放在 0x7e00)
+void pmm_init(uint64_t kernel_phys_base, uint64_t kernel_phys_size) {
     uint32_t ards_count = *(uint32_t*)0x7e00;
     ards_t* ards_buffer = (ards_t*)0x7e10;
 
     uint64_t max_memory = 0;
 
-    // 计算最大物理内存边界
-    for (int i = 0; i < ards_count; i++) {
-        // 打印每一项的详情
-        // %x 打印 32 位，我们将 64 位拆开显示以确保在实体机能看全
-        uint32_t base_low = (uint32_t)(ards_buffer[i].base_addr & 0xFFFFFFFF);
-        uint32_t base_high = (uint32_t)(ards_buffer[i].base_addr >> 32);
-        uint32_t len_low = (uint32_t)(ards_buffer[i].length & 0xFFFFFFFF);
-        uint32_t type = ards_buffer[i].type;
-
-        printk("[%02d] Base:0x%08x%08x Len:0x%08x Type:%d\n", 
-               i, base_high, base_low, len_low, type);
-
+    for (uint32_t i = 0; i < ards_count; i++) {
         uint64_t region_end = ards_buffer[i].base_addr + ards_buffer[i].length;
         if (ards_buffer[i].type == ARDS_TYPE_USABLE && region_end > max_memory) {
             max_memory = region_end;
         }
     }
 
-    pmm_manager.total_pages = max_memory / PAGE_SIZE;
+    pmm_manager.total_pages = (max_memory + PAGE_SIZE - 1) / PAGE_SIZE;
     pmm_manager.free_pages = 0;
 
-    // 位图放置在 2MB 处 (0x200000)，避开 0-2MB 的内核与页表区域
-    pmm_manager.map_start_addr = 0x200000;
-    pmm_bitmap = (uint8_t*)pmm_manager.map_start_addr;
+    uint64_t bitmap_bytes = (pmm_manager.total_pages + 7) / 8;
+    uint64_t bitmap_pages = (bitmap_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
 
-    // 计算位图本身需要的字节数
-    uint64_t bitmap_size = pmm_manager.total_pages / 8;
+    // 先固定放到 4 MiB 处
+    uint64_t bitmap_phys = 0x00400000;
+    pmm_manager.map_start_addr = bitmap_phys;
+    pmm_bitmap = (uint8_t*)(uintptr_t)bitmap_phys;   // 你当前仍依赖低端 identity map
 
-    // 初始化位图：全部置为 1 (已占用)
-    for (uint64_t i = 0; i < bitmap_size; i++) {
-        pmm_bitmap[i] = 0xff;
-    }
+    // 全部先标记为已占用
+    memset(pmm_bitmap, 0xFF, bitmap_pages * PAGE_SIZE);
 
-    // 根据 ARDS 表，将可用区域清 0
-    for (int i = 0; i < ards_count; i++) {
+    // 根据 ARDS 释放 usable 区
+    for (uint32_t i = 0; i < ards_count; i++) {
+        if (ards_buffer[i].type != ARDS_TYPE_USABLE) continue;
 
-        if (ards_buffer[i].type == ARDS_TYPE_USABLE) {
-            uint64_t base = ards_buffer[i].base_addr;
-            uint64_t len = ards_buffer[i].length;
+        uint64_t start = ards_buffer[i].base_addr;
+        uint64_t end   = ards_buffer[i].base_addr + ards_buffer[i].length;
 
-            uint64_t start_page = base / PAGE_SIZE;
-            uint64_t end_page = (base + len) / PAGE_SIZE;
+        uint64_t start_page = start / PAGE_SIZE;
+        uint64_t end_page   = end / PAGE_SIZE;   // [start, end)
 
-            for (uint64_t page = start_page; page < end_page && page < pmm_manager.total_pages; page++) {
-                pmm_bitmap[page / 8] &= ~(1 << (page % 8));
+        for (uint64_t page = start_page; page < end_page && page < pmm_manager.total_pages; page++) {
+            uint8_t mask = (uint8_t)(1u << (page % 8));
+            if (pmm_bitmap[page / 8] & mask) {
+                pmm_bitmap[page / 8] &= (uint8_t)~mask;
                 pmm_manager.free_pages++;
             }
         }
     }
 
-    // 打印内存大小 (MB)
-    printk("Total Memory detected: %d MB\n", (uint32_t)(max_memory / (1024 * 1024)));
+    printk("Total Memory detected: %u MB\n", (uint32_t)(max_memory / (1024 * 1024)));
 
-    // 保护关键物理内存区域！
-    // 0~4KB: 保护 BIOS 数据区
-    pmm_reserve_region(0x0, 0x1000);
-    // 保护内核代码与数据区 (假设内核加载在 0x10000)
-    pmm_reserve_region(0x10000, 0x90000);
-    // 保护 VGA 显存区 (文本模式 0xb8000，图形模式 0xa0000 等)
-    pmm_reserve_region(0xa0000, 0x60000);
-    // 保护 Loader 中建立的 64 位页表区 (0x100000 ~ 0x103000)
-    pmm_reserve_region(0x100000, 0x3000);
-    // 保护位图自身！
-    pmm_reserve_region(0x200000, bitmap_size);
+    // 低端 BIOS / 实模式残留
+    pmm_reserve_region(0x00000000, 0x001000);
+    // VGA / ROM hole
+    pmm_reserve_region(0x000A0000, 0x00060000);
+    // early stack
+    pmm_reserve_region(0x00090000, 0x00001000);
+    // early page tables
+    pmm_reserve_region(0x00100000, 0x00005000);
+    // kernel image
+    pmm_reserve_region(kernel_phys_base, kernel_phys_size);
+    // pmm bitmap 自身
+    pmm_reserve_region(bitmap_phys, bitmap_pages * PAGE_SIZE);
 
-    printk("PMM Init: Bitmap @0x200000, Size=%d bytes, Free Pages: %d\n", (uint32_t)bitmap_size, (uint32_t)pmm_manager.free_pages);
+    printk("PMM: total_pages=%u free_pages=%u bitmap=%p bitmap_bytes=%u\n",
+           (uint32_t)pmm_manager.total_pages,
+           (uint32_t)pmm_manager.free_pages,
+           pmm_bitmap,
+           (uint32_t)bitmap_bytes);
 }
 
 void pmm_reserve_region(uint64_t start_addr, uint64_t size) {

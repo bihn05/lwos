@@ -7,7 +7,7 @@ void gdt_set_gate(int num, uint8_t access, uint8_t gran) {
     gdt[num].base_low    = 0;
     gdt[num].base_mid    = 0;
     gdt[num].base_high   = 0;
-    gdt[num].limit_low   = 0;
+    gdt[num].limit_low   = 0xFFFFF;
     gdt[num].access      = access;
     gdt[num].granularity = gran;
 }
@@ -27,20 +27,13 @@ void gdt_set_tss(int num, uint64_t base, uint32_t limit) {
 }
 
 void gdt_tss_init() {
-    // 1. 初始化空描述符
-    gdt_set_gate(0, 0, 0);
+    // 1. 初始化
 
-    // 2. 内核代码段: Access=0x9A (P/DPL0/Code/R), Gran=0x20 (L=1, 64-bit)
-    gdt_set_gate(1, 0x9A, 0x20);
-
-    // 3. 内核数据段: Access=0x92 (P/DPL0/Data/RW), Gran=0x00
-    gdt_set_gate(2, 0x92, 0x00);
-
-    // 4. 用户数据段: Access=0xF2 (P/DPL3/Data/RW), Gran=0x00
-    gdt_set_gate(3, 0xF2, 0x00);
-
-    // 5. 用户代码段: Access=0xFA (P/DPL3/Code/R), Gran=0x20 (L=1)
-    gdt_set_gate(4, 0xFA, 0x20);
+    *(uint64_t*)&gdt[0] = 0;
+    *(uint64_t*)&gdt[1] = 0x00AF9A000000FFFFULL; // kernel 64-bit code
+    *(uint64_t*)&gdt[2] = 0x00AF92000000FFFFULL; // kernel data
+    *(uint64_t*)&gdt[3] = 0x00AFFA000000FFFFULL; // user 64-bit code
+    *(uint64_t*)&gdt[4] = 0x00AFF2000000FFFFULL; // user data
 
     // 6. 初始化 TSS 结构
     memset(&kernel_tss, 0, sizeof(tss_t));
@@ -54,10 +47,25 @@ void gdt_tss_init() {
     gdtr_t gdtr;
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base  = (uint64_t)&gdt;
+    // 加载GDT
     __asm__ volatile("lgdt %0" : : "m"(gdtr));
-
-    load_segments();
-
-    // 9. 加载任务寄存器 TR (选择子 0x28)
-    __asm__ volatile("ltr %%ax" : : "a"(0x28));
+    
+    // 远跳转刷新CS
+    __asm__ volatile(
+        "pushq $0x08\n"           // 内核代码段
+        "pushq $1f\n"              // 返回地址标签
+        "lretq\n"                  // 远返回
+        "1:\n"
+        "movq $0x10, %%rax\n"      // 内核数据段
+        "movq %%rax, %%ds\n"
+        "movq %%rax, %%es\n"
+        "movq %%rax, %%ss\n"
+        "movq %%rax, %%fs\n"
+        "movq %%rax, %%gs\n"
+        : : : "rax", "memory"
+    );
+    
+    // 加载TSS
+    __asm__ volatile("ltr %0" : : "r"((uint16_t)0x28));
+    //while (1);
 }

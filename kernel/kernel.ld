@@ -1,23 +1,34 @@
 OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(start)
 
+KERNEL_VMA = 0xFFFFFFFF80000000;
+KERNEL_LMA = 0x00200000;
+
 SECTIONS
 {
-    . = 0x10000;
+    . = KERNEL_VMA;
 
-    .text : {
-        /* 强制 start.o 的代码排在 0x10000 的起始位置 */
+    _kernel_start = .;
+
+    .text ALIGN(0x1000) : AT(KERNEL_LMA) {
         build/kernel/start.o(.text)
         *(.text)
     }
 
-    .rodata : { *(.rodata*) }
-    .data   : { *(.data*) }
-    
-    .bss : {
+    .rodata ALIGN(0x1000) : AT(KERNEL_LMA + (ADDR(.rodata) - KERNEL_VMA)) {
+        *(.rodata*)
+    }
+
+    .data ALIGN(0x1000) : AT(KERNEL_LMA + (ADDR(.data) - KERNEL_VMA)) {
+        *(.data*)
+    }
+
+    .bss ALIGN(0x1000) : AT(KERNEL_LMA + (ADDR(.bss) - KERNEL_VMA)) {
         *(.bss*)
         *(COMMON)
     }
+
+    _kernel_end = ALIGN(0x1000);
 
     /DISCARD/ : {
         *(.comment)

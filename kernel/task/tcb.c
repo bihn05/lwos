@@ -106,6 +106,6 @@ void init_multitasking() {
 
     // 连成环：main -> A -> B -> main
     main_thread->next = thread_a;
-    thread_a->next = thread_b;
-    thread_b->next = main_thread;
+    thread_a->next = main_thread;
+    //thread_b->next = main_thread;
 }

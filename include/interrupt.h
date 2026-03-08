@@ -23,7 +23,7 @@ typedef struct {
     uint16_t offset_mid;    // 目标偏移 16-31
     uint32_t offset_high;   // 目标偏移 32-63
     uint32_t zero;          // 必须为 0
-} idt_entry_t;
+} __attribute__((packed)) idt_entry_t;
 
 // 64 位 IDTR 指针
 typedef struct {
@@ -47,14 +47,33 @@ typedef struct {
     uint64_t rflags;
     uint64_t rsp;
     uint64_t ss;
-} int_registers_t;
+} __attribute__((packed)) int_registers_t;
+
+typedef struct {
+    // 偏移 0x00 ~ 0x38：最后 push 的 8 个寄存器
+    uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+    
+    // 偏移 0x40 ~ 0x70：严格对应你汇编的前半部分
+    uint64_t rdi; // 0x40 -> 汇编里倒数第 7 个 push 的
+    uint64_t rsi; // 0x48 -> 汇编里倒数第 6 个 push 的
+    uint64_t rbp; // 0x50 -> 就是你发现等于 rsp 的那个！
+    uint64_t rdx; // 0x58
+    uint64_t rcx; // 0x60
+    uint64_t rbx; // 0x68
+    uint64_t rax; // 0x70 -> 汇编里第 1 个 push 的
+    
+    // 偏移 0x78 ~ 0x98：硬件自动压入
+    uint64_t rip, cs, rflags, rsp, ss;
+} __attribute__((packed)) syscall_regs_t;
 
 #pragma pack(pop)
 
 // 导出初始化函数
 void idt_init(void);
 void interrupt_handler(int_registers_t* regs);
-
+void syscall_handler(syscall_regs_t* regs);
 void timer_handler(int_registers_t* regs);
+
+void dump_syscall_stack(syscall_regs_t *regs);
 
 #endif

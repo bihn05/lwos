@@ -24,10 +24,10 @@ BOCHSDBG := bochsdbg
 # 3. 编译与链接选项
 NASM_FLAGS_BIN := -f bin
 NASM_FLAGS_ELF := -f elf64
-GCC_FLAGS := -m64 -mno-red-zone -mcmodel=large -mno-mmx -mno-sse -mno-sse2 \
+GCC_FLAGS := -m64 -mno-red-zone -mcmodel=kernel -mno-mmx -mno-sse -mno-sse2 \
              -Wimplicit-function-declaration -w -fno-builtin -ffreestanding \
              -nodefaultlibs -nostdinc -nostdlib -fno-pic -fno-pie \
-             -fno-stack-protector -I$(INCLUDE_DIR)
+             -fno-stack-protector -I$(INCLUDE_DIR) -fno-asynchronous-unwind-tables
 # 显式指定入口点为 _start (确保 start.s 中有 global _start)
 LD_FLAGS := -m elf_x86_64 -static -T kernel/kernel.ld -L$(LIB_DIR)
 

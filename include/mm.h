@@ -4,5 +4,6 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/km.h>
+#include <mm/pt.h>
 
 #endif

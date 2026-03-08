@@ -12,69 +12,50 @@ void flush_tlb(uint64_t vaddr) {
     __asm__ volatile("invlpg (%0)" ::"r"(vaddr) : "memory");
 }
 
-// 核心机关：将任意 64 位虚拟地址映射到物理地址
-void map_page(uint64_t vaddr, uint64_t paddr, uint32_t flags) {
-    // 强制 4KB 对齐
-    vaddr &= 0xFFFFFFFFFFFFF000;
-    paddr &= 0xFFFFFFFFFFFFF000;
+int vmm_map_page(uint64_t pml4_pa, uint64_t va, uint64_t pa, uint64_t flags) {
+    uint64_t upper_flags = PTE_RW;
+    if (flags & PTE_US) upper_flags |= PTE_US;
 
-    // 获取顶级页表 PML4 的地址
-    uint64_t* pml4 = (uint64_t*)get_cr3();
-    
-    // 1. 穿透 PML4
-    uint64_t pml4_idx = PML4_INDEX(vaddr);
-    if ((pml4[pml4_idx] & PAGE_PRESENT) == 0) {
-        uint64_t new_pdpt = pmm_alloc_page();
-        if(!new_pdpt) { printk("VMM OOM at PML4\n"); return; }
-        memset((void*)new_pdpt, 0, PAGE_SIZE); // 1GB 映射的福利：直接操作物理地址
-        pml4[pml4_idx] = new_pdpt | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+    uint64_t* pte = pt_get_pte(pml4_pa, va, 1, upper_flags);
+    if (!pte) {
+        printk("VMM: Failed to get PTE for VA 0x%08X%08X\n", (uint32_t)(va >> 32), (uint32_t)(va & 0xFFFFFFFF));
+        return 0;
     }
 
-    // 2. 穿透 PDPT
-    uint64_t* pdpt = (uint64_t*)(pml4[pml4_idx] & 0xFFFFFFFFFFFFF000);
-    uint64_t pdpt_idx = PDPT_INDEX(vaddr);
-    if ((pdpt[pdpt_idx] & PAGE_PRESENT) == 0) {
-        uint64_t new_pd = pmm_alloc_page();
-        if(!new_pd) { printk("VMM OOM at PDPT\n"); return; }
-        memset((void*)new_pd, 0, PAGE_SIZE);
-        pdpt[pdpt_idx] = new_pd | PAGE_PRESENT | PAGE_RW | PAGE_USER;
+    if (*pte & PTE_P) {
+        printk("VMM: Warning - VA 0x%08X%08X is already mapped, skipping\n", (uint32_t)(va >> 32), (uint32_t)(va & 0xFFFFFFFF));
+        return 0; // 暂时不允许覆盖
     }
 
-    // 3. 穿透 PD
-    uint64_t* pd = (uint64_t*)(pdpt[pdpt_idx] & 0xFFFFFFFFFFFFF000);
-    uint64_t pd_idx = PD_INDEX(vaddr);
-    if ((pd[pd_idx] & PAGE_PRESENT) == 0) {
-        uint64_t new_pt = pmm_alloc_page();
-        if(!new_pt) { printk("VMM OOM at PD\n"); return; }
-        memset((void*)new_pt, 0, PAGE_SIZE);
-        pd[pd_idx] = new_pt | PAGE_PRESENT | PAGE_RW | PAGE_USER;
-    }
-
-    // 4. 到达终点 PT，写入物理页框
-    uint64_t* pt = (uint64_t*)(pd[pd_idx] & 0xFFFFFFFFFFFFF000);
-    uint64_t pt_idx = PT_INDEX(vaddr);
-    pt[pt_idx] = paddr | flags | PAGE_PRESENT;
-
-    flush_tlb(vaddr);
+    *pte = (pa & PAGE_MASK) | flags | PTE_P;
+    return 1;
 }
 
-// 连续映射一片区域
-void vmm_alloc_map_region(uint64_t vaddr, uint64_t size, uint32_t flags) {
-    if (size == 0) return;
+int vmm_alloc_map_region(uint64_t pml4_pa, uint64_t vaddr, uint64_t size, uint32_t flags) {
+    uint64_t start = vaddr & PAGE_MASK;
+    uint64_t end = ((vaddr + size + PAGE_SIZE - 1) & PAGE_MASK);
 
-    uint64_t start_vaddr = vaddr & 0xFFFFFFFFFFFFF000;
-    uint64_t end_vaddr = ((vaddr + size + 0xFFF) & 0xFFFFFFFFFFFFF000);
-
-    for (uint64_t current_addr = start_vaddr; current_addr < end_vaddr; current_addr += PAGE_SIZE) {
-        // 先检查是否已经映射，防止重复分配
-        // 为保持简单，这里我们直接信任 map_page 的覆盖能力，或者你可以补全检查逻辑
+    for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
         uint64_t phys_page = pmm_alloc_page();
-        if (phys_page == 0) {
-            printk("###NO MEM for vmm_alloc_map_region\n");
-            return;
+        if (!phys_page) {
+            printk("VMM: Failed to allocate physical page for mapping!\n");
+            return 0;
         }
-        map_page(current_addr, phys_page, flags);
+        if (!vmm_map_page(pml4_pa, addr, phys_page, flags)) {
+            printk("VMM: Failed to map page at VA 0x%08X%08X\n", (uint32_t)(addr >> 32), (uint32_t)(addr & 0xFFFFFFFF));
+            return 0;
+        }
     }
-
-    asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");
+    return 1;
 }
+
+int vmm_unmap_page(uint64_t pml4_pa, uint64_t va) {
+    uint64_t upper_flags = PTE_RW;
+    uint64_t* pte = pt_get_pte(pml4_pa, va, 0, upper_flags);
+    if (!pte) return 0;
+    if (!(*pte & PTE_P)) return 0;
+
+    *pte = 0;
+    return 1;
+}
+

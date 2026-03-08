@@ -1,0 +1,49 @@
+
+build/test.elf:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000400000 <syscall3>:
+  400000:	55                   	push   rbp
+  400001:	48 89 e5             	mov    rbp,rsp
+  400004:	48 89 7d e8          	mov    QWORD PTR [rbp-0x18],rdi
+  400008:	48 89 75 e0          	mov    QWORD PTR [rbp-0x20],rsi
+  40000c:	48 89 55 d8          	mov    QWORD PTR [rbp-0x28],rdx
+  400010:	48 89 4d d0          	mov    QWORD PTR [rbp-0x30],rcx
+  400014:	48 8b 45 e8          	mov    rax,QWORD PTR [rbp-0x18]
+  400018:	48 8b 7d e0          	mov    rdi,QWORD PTR [rbp-0x20]
+  40001c:	48 8b 75 d8          	mov    rsi,QWORD PTR [rbp-0x28]
+  400020:	48 8b 55 d0          	mov    rdx,QWORD PTR [rbp-0x30]
+  400024:	cd 80                	int    0x80
+  400026:	48 89 45 f8          	mov    QWORD PTR [rbp-0x8],rax
+  40002a:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+  40002e:	5d                   	pop    rbp
+  40002f:	c3                   	ret
+
+0000000000400030 <write>:
+  400030:	55                   	push   rbp
+  400031:	48 89 e5             	mov    rbp,rsp
+  400034:	48 83 ec 10          	sub    rsp,0x10
+  400038:	89 7d fc             	mov    DWORD PTR [rbp-0x4],edi
+  40003b:	48 89 75 f0          	mov    QWORD PTR [rbp-0x10],rsi
+  40003f:	89 55 f8             	mov    DWORD PTR [rbp-0x8],edx
+  400042:	8b 45 f8             	mov    eax,DWORD PTR [rbp-0x8]
+  400045:	48 63 c8             	movsxd rcx,eax
+  400048:	48 8b 55 f0          	mov    rdx,QWORD PTR [rbp-0x10]
+  40004c:	8b 45 fc             	mov    eax,DWORD PTR [rbp-0x4]
+  40004f:	48 98                	cdqe
+  400051:	48 89 c6             	mov    rsi,rax
+  400054:	bf 01 00 00 00       	mov    edi,0x1
+  400059:	e8 a2 ff ff ff       	call   400000 <syscall3>
+  40005e:	c9                   	leave
+  40005f:	c3                   	ret
+
+0000000000400060 <main>:
+  400060:	55                   	push   rbp
+  400061:	48 89 e5             	mov    rbp,rsp
+  400064:	ba 17 00 00 00       	mov    edx,0x17
+  400069:	be 00 10 40 00       	mov    esi,0x401000
+  40006e:	bf 01 00 00 00       	mov    edi,0x1
+  400073:	e8 b8 ff ff ff       	call   400030 <write>
+  400078:	eb fe                	jmp    400078 <main+0x18>

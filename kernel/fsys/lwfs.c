@@ -58,7 +58,7 @@ vfs_node_t* lwfs_mount(block_dev_t* dev) {
 static uint64_t lwfs_cluster_to_lba(lwfs_instance_t* inst, uint32_t cluster) {
 	// 8200 + 512 + 27*8 = 8928
 	uint32_t data_start_lba = inst->sb.cluster_offset + inst->sb.cluster_count; // 数据区起始 LBA
-	printk("clstoff %d, clstcnt %d, clstshf %d, clst %d\n", inst->sb.cluster_offset, inst->sb.cluster_count, inst->sb.cluster_shift, cluster);
+	// printk("clstoff %d, clstcnt %d, clstshf %d, clst %d\n", inst->sb.cluster_offset, inst->sb.cluster_count, inst->sb.cluster_shift, cluster);
 	return data_start_lba + (cluster) * (1 << inst->sb.cluster_shift);
 }
 uint32_t lwfs_get_next_cluster(lwfs_instance_t* inst, uint32_t cluster) {
@@ -74,9 +74,9 @@ uint32_t lwfs_get_next_cluster(lwfs_instance_t* inst, uint32_t cluster) {
 	return heap_buf[offset_in_sector];
 }
 int lwfs_read_cluster(lwfs_instance_t* inst, uint32_t lwfs_cluster, uint8_t* buffer) {
-	printk("Reading cluster %d from disk...\n", lwfs_cluster);
+	// printk("Reading cluster %d from disk...\n", lwfs_cluster);
 	uint64_t lba = lwfs_cluster_to_lba(inst, lwfs_cluster);
-	printk("so it is lba %d\n", lba);
+	// printk("so it is lba %d\n", lba);
 	uint32_t sectors_per_cluster = 1 << (inst->sb.cluster_shift);
 	return inst->disk->ops->read(inst->disk, lba, sectors_per_cluster, buffer);
 }

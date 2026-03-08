@@ -101,7 +101,6 @@ static char* number(char* str, uint64_t* num, int base, int size, int precision,
 int vsprintf(char* buf, const char* fmt, va_list args) {
 	int len;
 	uint64_t num;
-	double dval;
 	int i, base;
 	int* ip;
 	char* str;

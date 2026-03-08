@@ -1,3 +1,11 @@
+KERNEL_PHYS_BASE   equ 0x00200000
+KERNEL_VIRT_BASE   equ 0xFFFFFFFF80000000
+
+EARLY_STACK_PHYS   equ 0x00090000
+
+PAGE_PRESENT       equ 0x001
+PAGE_RW            equ 0x002
+PAGE_PS            equ 0x080
 [org 0x900]
 jmp init
 
@@ -101,8 +109,8 @@ pmode_start:
 	out 0x21, al
 	out 0xa1, al
 	
-	; 1. 在 32位平坦模式下 (未开启分页) 读取内核到 0x10000
-	push dword 0x10000
+	; 1. 在 32位平坦模式下 (未开启分页) 读取内核到 0x100000
+	push dword KERNEL_PHYS_BASE
 	push dword 0
 	push dword 0x10
 	push dword 200
@@ -116,58 +124,111 @@ pmode_start:
 	call putstr
 	add esp, 0x4
 
-	; 2. 准备 64位 4级页表 (PML4 -> PDPT -> PD，使用 2MB 巨页恒等映射 0~2MB)
-	; 清理 0x100000 ~ 0x102FFF (12KB) 作为页表空间
-	mov edi, 0x100000
-	mov ecx, 3072        ; 3072 个 dword = 12KB
-	xor eax, eax
-	rep stosd
 
-	; 设置页表条目
-	; mov dword [0x100000], 0x101003 ; PML4[0] 指向 PDPT (Present + R/W)
-	; mov dword [0x101000], 0x102003 ; PDPT[0] 指向 PD   (Present + R/W)
-	; mov dword [0x102000], 0x000083 ; PD[0] 映射 0x0 开始的 2MB 巨页 (Present + R/W + Huge)
+; =========================================================
+; 2. 构造早期 4 级页表
+;    - PML4[0]   : 低地址 identity map
+;    - PML4[511] : 高半区内核 map
+; =========================================================
 
-; 设置 PML4 和 PDPT 的第一项
-	mov dword [0x100000], 0x101003 ; PML4[0] 指向 PDPT (Present + R/W)
-	mov dword [0x101000], 0x102003 ; PDPT[0] 指向 PD   (Present + R/W)
+EARLY_PML4_PHYS    equ 0x00100000
+LOW_PDPT_PHYS      equ 0x00101000
+LOW_PD_PHYS        equ 0x00102000
+HIGH_PDPT_PHYS     equ 0x00103000
+HIGH_PD_PHYS       equ 0x00104000
 
-	; 循环填充 PD 的 512 个条目，映射前 1GB 物理内存
-	mov edi, 0x102000    ; PD 基址
-	mov eax, 0x00000083  ; 初始值：物理地址 0, Present, R/W, Huge Page (2MB)
-	mov ecx, 512         ; 循环 512 次
-.map_1gb:
-	mov [edi], eax       ; 写入低 32 位 (地址 + 属性)
-	mov dword [edi+4], 0 ; 写入高 32 位 (设为 0)
-	add eax, 0x200000    ; 每次增加 2MB (物理基址递增)
-	add edi, 8           ; 每次向后移动 8 个字节 (64位页表条目占 8 字节)
-	loop .map_1gb
+mov edi, EARLY_PML4_PHYS
+mov ecx, 5120              ; 5 pages = 20 KiB = 5120 dwords
+xor eax, eax
+rep stosd
 
-	; 3. 开启 PAE (Physical Address Extension)
-	mov eax, cr4
-	or eax, 1 << 5
-	mov cr4, eax
+; ---------------------------------------------------------
+; 低地址 identity map
+; ---------------------------------------------------------
+; PML4[0] -> LOW_PDPT
+mov dword [EARLY_PML4_PHYS + 0*8], LOW_PDPT_PHYS | PAGE_PRESENT | PAGE_RW
+mov dword [EARLY_PML4_PHYS + 0*8 + 4], 0
 
-	; 4. 加载 PML4 基址到 CR3
-	mov eax, 0x100000
-	mov cr3, eax
+; LOW_PDPT[0] -> LOW_PD
+mov dword [LOW_PDPT_PHYS + 0*8], LOW_PD_PHYS | PAGE_PRESENT | PAGE_RW
+mov dword [LOW_PDPT_PHYS + 0*8 + 4], 0
 
-	; 5. 开启 EFER 寄存器中的 LME (Long Mode Enable) 标志
-	mov ecx, 0xC0000080
-	rdmsr
-	or eax, 1 << 8
-	wrmsr
+; LOW_PD 映射前 1GiB 物理内存
+mov edi, LOW_PD_PHYS
+mov eax, PAGE_PRESENT | PAGE_RW | PAGE_PS
+mov ecx, 512
 
-	; 6. 开启分页 (这一步真正激活了长模式兼容环境)
-	mov eax, cr0
-	or eax, 1 << 31
-	mov cr0, eax
+.map_low_1gb:
+    mov [edi], eax
+    mov dword [edi+4], 0
+    add eax, 0x200000
+    add edi, 8
+    loop .map_low_1gb
 
-	; 7. 加载 64位 GDT
-	lgdt [gdt64_descriptor]
+; ---------------------------------------------------------
+; 高半区内核映射
+; 0xFFFFFFFF80000000 -> 物理 0x00000000 起
+; 对应：PML4[511], PDPT[510]
+; ---------------------------------------------------------
 
-	; 8. 远跳转，彻底进入 64 位长模式
-	jmp 0x08:long_mode_start
+; PML4[511] -> HIGH_PDPT
+mov dword [EARLY_PML4_PHYS + 511*8], HIGH_PDPT_PHYS | PAGE_PRESENT | PAGE_RW
+mov dword [EARLY_PML4_PHYS + 511*8 + 4], 0
+
+; HIGH_PDPT[510] -> HIGH_PD
+mov dword [HIGH_PDPT_PHYS + 510*8], HIGH_PD_PHYS | PAGE_PRESENT | PAGE_RW
+mov dword [HIGH_PDPT_PHYS + 510*8 + 4], 0
+
+; HIGH_PD 也映射前 1GiB 物理内存
+mov edi, HIGH_PD_PHYS
+mov eax, KERNEL_PHYS_BASE | PAGE_PRESENT | PAGE_RW | PAGE_PS
+mov ecx, 8
+
+.map_high_1gb:
+    mov [edi], eax
+    mov dword [edi+4], 0
+    add eax, 0x200000
+    add edi, 8
+    loop .map_high_1gb
+
+    ; =========================================================
+    ; 3. 开启 PAE
+    ; =========================================================
+    mov eax, cr4
+    or eax, 1 << 5
+    mov cr4, eax
+
+    ; =========================================================
+    ; 4. CR3 = 新 PML4
+    ; =========================================================
+    mov eax, EARLY_PML4_PHYS
+    mov cr3, eax
+
+    ; =========================================================
+    ; 5. 开启 EFER.LME
+    ; =========================================================
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    ; =========================================================
+    ; 6. 开启分页
+    ; =========================================================
+    mov eax, cr0
+    or eax, 1 << 31
+    mov cr0, eax
+
+    ; =========================================================
+    ; 7. 加载 64 位 GDT
+    ; =========================================================
+    lgdt [gdt64_descriptor]
+
+    ; =========================================================
+    ; 8. 远跳转进入 64 位模式
+    ; =========================================================
+    jmp 0x08:long_mode_start
+
 
 [bits 64]
 long_mode_start:
@@ -179,11 +240,11 @@ long_mode_start:
 	mov gs, ax
 	mov ss, ax
 
-    mov rsp, 0x90000
+    mov rsp, EARLY_STACK_PHYS
     mov rbp, rsp
 
 	; 华丽的纵身一跃，跳入 64位 内核
-	mov rax, 0x10000
+	mov rax, KERNEL_VIRT_BASE
 	jmp rax
 
 ; ==========================================

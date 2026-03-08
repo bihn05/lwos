@@ -38,6 +38,6 @@ typedef struct {
 
 #define PT_LOAD 1
 
-uint64_t load_elf(vfs_node_t* elf_node);
+uint64_t load_elf(uint64_t pml4_pa, vfs_node_t* elf_node);
 
 #endif

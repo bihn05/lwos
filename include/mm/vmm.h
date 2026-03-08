@@ -3,13 +3,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <printk.h>
 #include <mm/pmm.h>
-
-#define PAGE_PRESENT 0x1
-#define PAGE_RW      0x2
-#define PAGE_USER    0x4
-#define PAGE_DISABLE_CACHE 0x10
+#include <mm/pt.h>
 
 // 64位地址切分宏：每次取 9 位 (0x1FF)
 #define PML4_INDEX(addr) (((uint64_t)(addr) >> 39) & 0x1FF)
@@ -18,8 +13,9 @@
 #define PT_INDEX(addr)   (((uint64_t)(addr) >> 12) & 0x1FF)
 
 uint64_t get_cr3();
-void flust_tlb(uint64_t vaddr);
-void map_page(uint64_t vaddr, uint64_t paddr, uint32_t flags);
-void vmm_alloc_map_region(uint64_t vaddr, uint64_t size, uint32_t flags);
+void flush_tlb(uint64_t vaddr);
+int vmm_map_page(uint64_t pml4_pa, uint64_t va, uint64_t pa, uint64_t flags);
+int vmm_alloc_map_region(uint64_t pml4_pa, uint64_t vaddr, uint64_t size, uint32_t flags);
+int vmm_unmap_page(uint64_t pml4_pa, uint64_t va);
 
 #endif

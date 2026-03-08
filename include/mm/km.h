@@ -6,9 +6,9 @@
 #include <mm/pmm.h>
 
 // 64 位下标准的内核高半区堆起始地址
-#define KHEAP_START        0xFFFF800000000000
-// 物理内存变大了，我们直接把初始堆放大到 16MB
-#define KHEAP_INITIAL_SIZE 0x1000000 
+#define KHEAP_START        0xFFFFFFFF82000000ULL
+// 物理内存变大了，我们直接把初始堆放大到 8MB
+#define KHEAP_INITIAL_SIZE 0x800000 
 
 // 64位块头：刚好 32 字节 (8 * 4)
 typedef struct chunk_header {

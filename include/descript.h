@@ -14,18 +14,18 @@ typedef struct {
     uint8_t  access;
     uint8_t  granularity;
     uint8_t  base_high;
-} gdt_entry_t; // gdt
+} __attribute__((packed)) gdt_entry_t; // gdt
 
 typedef struct {
     gdt_entry_t low;
     uint32_t    base_upper;
     uint32_t    reserved;
-} gdt_tss_entry_t; // tss
+} __attribute__((packed)) gdt_tss_entry_t; // tss
 
 typedef struct {
     uint16_t limit;
     uint64_t base;
-} gdtr_t; // GDT register
+} __attribute__((packed)) gdtr_t; // GDT register
 
 typedef struct {
     uint32_t reserved0;
@@ -37,7 +37,7 @@ typedef struct {
     uint64_t reserved2;
     uint16_t reserved3;
     uint16_t iomap_base;
-} tss_t;
+} __attribute__((packed)) tss_t;
 
 #pragma pack(pop)
 
@@ -49,5 +49,6 @@ extern void load_segments();
 void gdt_set_gate(int num, uint8_t access, uint8_t gran);
 void gdt_set_tss(int num, uint64_t base, uint32_t limit);
 void gdt_tss_init();
+extern void tss_late_init();
 
 #endif

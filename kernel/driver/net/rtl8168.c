@@ -25,7 +25,7 @@ bool rtl8168_init_rings(rtl8168_t *nic) {
     // 2. 映射虚拟地址并禁用 Cache (极度重要)
     // 假设你的 vmm 提供恒等映射或高半核映射，这里假设 vaddr = dma_phys
     uint64_t vaddr = dma_phys;
-    vmm_alloc_map_region(vaddr, total_pages * 4096, PAGE_PRESENT | PAGE_RW | PAGE_DISABLE_CACHE);
+    vmm_alloc_map_region(get_cr3(), vaddr, total_pages * 4096, PTE_P | PTE_RW | PTE_US);
 
     // 3. 在虚拟内存上划分区域
     nic->rx_ring = (rtl8168_desc_t *)vaddr;

@@ -6,7 +6,7 @@ chunk_header_t* kheap_first_chunk = 0;
 void kheap_init() {
     // 1. 利用 VMM 为堆所在的虚拟地址范围分配物理页并建立映射
     // vmm_alloc_map_region 会自动向 PMM 索要物理页并填入 4 级页表
-    vmm_alloc_map_region(KHEAP_START, KHEAP_INITIAL_SIZE, PAGE_PRESENT | PAGE_RW);
+    vmm_alloc_map_region(get_cr3(), KHEAP_START, KHEAP_INITIAL_SIZE, PTE_P | PTE_RW | PTE_US);
 
     // 2. 初始化第一个超级块
     kheap_first_chunk = (chunk_header_t*)KHEAP_START;

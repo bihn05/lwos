@@ -32,5 +32,6 @@ typedef unsigned long long uint64_t;
  */
 typedef unsigned int       size_t;
 typedef uint64_t           time_t;
+typedef uint64_t           uintptr_t;
 
 #endif

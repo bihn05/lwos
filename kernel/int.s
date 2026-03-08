@@ -117,3 +117,50 @@ isr_stub_table:
     dq isr%+i    ; dq 表示 64 位地址 (8字节)
 %assign i i+1
 %endrep
+
+global isr_syscall_stub
+extern syscall_handler
+
+isr_syscall_stub:
+; 1. 保护所有通用寄存器
+    push rax
+    push rbx
+    push rcx
+    push rdx
+    push rbp
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+
+    ; 2. 将当前的栈顶指针 (rsp) 作为第一个参数 (rdi) 传给 C 函数
+    ; 这样 C 函数就能通过结构体指针访问所有寄存器
+    mov rdi, rsp 
+    ; 3. 调用 C 语言层的分发器
+    call syscall_handler
+
+    ; 4. 恢复现场 (注意顺序与 push 相反)
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdi
+    pop rsi
+    pop rbp
+    pop rdx
+    pop rcx
+    pop rbx
+    pop rax  ; C 函数可能会修改栈上的 rax 值来作为返回值，这里弹出的就是修改后的值
+
+    ; 5. 跨特权级返回用户态
+    iretq
