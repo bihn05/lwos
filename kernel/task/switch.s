@@ -17,10 +17,8 @@ kernel_thread_stub:
 
 global switch_to
 
-; void switch_to(task_struct_t* current, task_struct_t* next);
-; 根据 System V ABI，参数 1 (current) 在 RDI，参数 2 (next) 在 RSI
+; switch_to(task_struct_t* current, task_struct_t* next)
 switch_to:
-    ; 1. 保存当前线程的执行上下文 (只需保存 Callee-saved 寄存器)
     push rbp
     push rbx
     push r12
@@ -28,18 +26,19 @@ switch_to:
     push r14
     push r15
 
-    ; 2. 核心：保存当前栈顶指针到 current->kernel_stack
-    ; 由于 kernel_stack 在 task_struct 的偏移量为 0，[rdi] 就是它的地址
+    ; 保存 current 栈
     mov [rdi], rsp
 
-    ; ---------------------------------------------------------
-    ; 这一步跨越了线程的边界，CPU 的栈已经被替换为新线程的栈！
-    ; ---------------------------------------------------------
+    ; --- 用户态进程 CR3 切换 ---
+    mov rax, [rsi + 0x30]   ; 假设 pml4_dir 偏移是 0x30
+    test rax, rax
+    jz .skip_cr3
+    mov cr3, rax
+.skip_cr3:
 
-    ; 3. 核心：从 next->kernel_stack 恢复新线程的栈顶指针
+    ; 切换到 next 栈
     mov rsp, [rsi]
 
-    ; 4. 恢复新线程的执行上下文
     pop r15
     pop r14
     pop r13
@@ -47,5 +46,4 @@ switch_to:
     pop rbx
     pop rbp
 
-    ; 5. 返回到新线程上次调用 switch_to 的地方 (或者新线程的入口)
     ret

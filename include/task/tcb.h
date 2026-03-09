@@ -16,7 +16,7 @@ typedef enum {
 
 // 64 位线程控制块
 typedef struct task_struct {
-    uint64_t* kernel_stack; // 必须放在结构体的第一个位置 (偏移量为 0)，方便汇编寻址
+    uint64_t* kernel_stack;
 
     task_state_t state;
     uint32_t pid;
@@ -26,14 +26,11 @@ typedef struct task_struct {
     uint32_t ticks;               // 每次调度分配的时间片滴答数
     uint32_t elapsed_ticks;       // 总计运行的滴答数 (统计 CPU 占用)
     
-    // 虚拟内存 (留作未来用户态进程切换 CR3 使用)
-    uint64_t* pml4_dir;           
-    
-    // 链表节点 (用于就绪队列、阻塞队列)
+    uint64_t pml4_dir;           
     struct task_struct* next;     
     struct task_struct* prev;     
     
-    // 栈溢出保护魔数 (放在结构体尾部，如果栈向下生长到底部，会先破坏这个魔数)
+    // 栈溢出保护魔数
     uint64_t magic;
 } task_struct_t;
 
@@ -50,7 +47,7 @@ typedef struct {
 extern task_struct_t* current_thread;
 
 void kernel_thread_entry(thread_func_t function, void* func_arg);
-task_struct_t* thread_create(char* name, int priority, thread_func_t function, void* func_arg);
+task_struct_t* thread_create(uint64_t pml4_pa, char* name, int priority, thread_func_t function, void* func_arg);
 void task_a(void* arg);
 void task_b(void* arg);
 void schedule();

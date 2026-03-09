@@ -162,3 +162,112 @@ bool pci_find_device_by_class(uint8_t target_class, uint8_t target_subclass, pci
     }
     return false; // 遍历结束未找到
 }
+
+pci_bar_info_t pci_read_bar(uint8_t bus, uint8_t slot, uint8_t func, uint8_t bar_index) {
+    pci_bar_info_t info = {0};
+    uint8_t off = 0x10 + bar_index * 4;
+
+    uint32_t orig = pci_config_read(bus, slot, func, off);
+    if (orig == 0 || orig == 0xFFFFFFFF) {
+        return info;
+    }
+
+    if (orig & 0x1) {
+        info.is_io = true;
+        info.base = (uint64_t)(orig & ~0x3U);
+
+        pci_config_write(bus, slot, func, off, 0xFFFFFFFF);
+        uint32_t sized = pci_config_read(bus, slot, func, off);
+        pci_config_write(bus, slot, func, off, orig);
+
+        info.size = (uint32_t)(~(sized & ~0x3U) + 1);
+        return info;
+    }
+
+    info.is_io = false;
+    uint32_t type = (orig >> 1) & 0x3;
+    info.prefetchable = (orig >> 3) & 1;
+
+    if (type == 0x2) {
+        info.is_64 = true;
+
+        uint32_t orig_hi = pci_config_read(bus, slot, func, off + 4);
+        info.base = ((uint64_t)orig_hi << 32) | (orig & ~0xFULL);
+
+        pci_config_write(bus, slot, func, off, 0xFFFFFFFF);
+        pci_config_write(bus, slot, func, off + 4, 0xFFFFFFFF);
+        uint32_t size_lo = pci_config_read(bus, slot, func, off);
+        uint32_t size_hi = pci_config_read(bus, slot, func, off + 4);
+
+        pci_config_write(bus, slot, func, off, orig);
+        pci_config_write(bus, slot, func, off + 4, orig_hi);
+
+        uint64_t mask = ((uint64_t)size_hi << 32) | (size_lo & ~0xFULL);
+        info.size = ~mask + 1;
+    } else {
+        info.is_64 = false;
+        info.base = (uint64_t)(orig & ~0xFULL);
+
+        pci_config_write(bus, slot, func, off, 0xFFFFFFFF);
+        uint32_t sized = pci_config_read(bus, slot, func, off);
+        pci_config_write(bus, slot, func, off, orig);
+
+        info.size = (uint32_t)(~(sized & ~0xFULL) + 1);
+    }
+
+    return info;
+}
+
+void pci_enable_device_mem(uint8_t bus, uint8_t slot, uint8_t func) {
+    uint32_t cmdsts = pci_config_read(bus, slot, func, 0x04);
+    uint16_t cmd = (uint16_t)(cmdsts & 0xFFFF);
+
+    cmd |= (1 << 1); // Memory Space Enable
+    cmd |= (1 << 2); // Bus Master Enable (可选，但一般顺手开)
+    // I/O space 不是必须，除非你用 0x1CE/0x1CF 端口
+    cmd |= (1 << 0);
+
+    cmdsts = (cmdsts & 0xFFFF0000U) | cmd;
+    pci_config_write(bus, slot, func, 0x04, cmdsts);
+}
+
+bool bga_find_pci_device(pci_addr_t *out) {
+    for (uint16_t bus = 0; bus < 256; ++bus) {
+        for (uint8_t slot = 0; slot < 32; ++slot) {
+            for (uint8_t func = 0; func < 8; ++func) {
+                uint32_t id = pci_config_read(bus, slot, func, 0x00);
+                if (id == 0xFFFFFFFF)
+                    continue;
+
+                uint16_t vendor = (uint16_t)(id & 0xFFFF);
+                uint16_t device = (uint16_t)((id >> 16) & 0xFFFF);
+
+                if (vendor == BGA_PCI_VENDOR_ID && device == BGA_PCI_DEVICE_ID) {
+                    out->bus  = (uint8_t)bus;
+                    out->slot = slot;
+                    out->func = func;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+uint16_t pci_get_vendor_id(uint8_t bus, uint8_t slot, uint8_t func) {
+    uint32_t val = pci_config_read(bus, slot, func, 0x00);
+    return (uint16_t)(val & 0xFFFF);
+}
+
+uint16_t pci_get_device_id(uint8_t bus, uint8_t slot, uint8_t func) {
+    uint32_t val = pci_config_read(bus, slot, func, 0x00);
+    return (uint16_t)((val >> 16) & 0xFFFF);
+}
+
+uint16_t pci_addr_vendor_id(pci_addr_t addr) {
+    return pci_get_vendor_id(addr.bus, addr.slot, addr.func);
+}
+
+uint16_t pci_addr_device_id(pci_addr_t addr) {
+    return pci_get_device_id(addr.bus, addr.slot, addr.func);
+}

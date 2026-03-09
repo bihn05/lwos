@@ -2,7 +2,7 @@
 #include <mm.h>
 #include <string.h>
 // 函数声明
-extern void switch_to();
+extern void switch_to(task_struct_t* prev, task_struct_t* next);
 extern void kernel_thread_stub(void);
 static uint32_t next_pid = 1;
 
@@ -17,7 +17,7 @@ void kernel_thread_entry(thread_func_t function, void* func_arg) {
     // TODO: 这里未来应该调用 thread_exit() 将自己移出调度队列并回收内存
     while(1) { __asm__ volatile("hlt"); }
 }
-task_struct_t* thread_create(char* name, int priority, thread_func_t function, void* func_arg) {
+task_struct_t* thread_create(uint64_t pml4_pa, char* name, int priority, thread_func_t function, void* func_arg) {
     // 1. 分配一个 4KB 页作为 TCB 和栈的混合体
     task_struct_t* thread = (task_struct_t*)kmalloc(4096);
     if (!thread) return NULL;
@@ -32,6 +32,7 @@ task_struct_t* thread_create(char* name, int priority, thread_func_t function, v
     thread->ticks = priority; 
     thread->elapsed_ticks = 0;
     thread->magic = 0x19980812; // 设置栈溢出保护魔数
+    thread->pml4_dir = pml4_pa; // 未来用户态进程切换 CR3 使用
 
     // 3. 计算并伪造内核栈
     // 栈底在这 4KB 页的最高地址处
@@ -68,10 +69,8 @@ void schedule() {
     task_struct_t* next = current_thread->next;
     task_struct_t* prev = current_thread;
 
-    // 更新全局状态
     current_thread = next;
 
-    // 扣动扳机：寄存器和栈在这个函数内部发生乾坤大挪移！
     switch_to(prev, next);
 }
 
@@ -98,6 +97,7 @@ void init_multitasking() {
     // 为当前正在运行的 kernel_init 申请一个 TCB
     main_thread = (task_struct_t*)kmalloc(4096);
     main_thread->pid = 0;
+    main_thread->pml4_dir = 0x200000;
     strcpy(main_thread->name, "main");
     main_thread->state = TASK_RUNNING;
     // 注意：不需要为它伪造栈，因为此时 RSP 已经是指向正确的内核栈了

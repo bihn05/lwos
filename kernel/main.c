@@ -14,9 +14,13 @@
 #include <driver/pci.h>
 #include <network.h>
 #include <mm/proc.h>
+#include <graphics.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
+pci_addr_t g_bga_pci_addr;
+uint64_t kernel_pm4;
+uint64_t user_pm4;
 void display_banner() {
 	printk(" ___       ___       __   ________  ________      \n");
 	printk("|\\  \\     |\\  \\     |\\  \\|\\   __  \\|\\   ____\\     \n");
@@ -38,8 +42,8 @@ void kernel_init() {
     idt_init();
     pmm_init();
     kheap_init();
-    uint64_t kernel_pm4 = get_cr3();
-    uint64_t user_pm4 = create_user_address_space(kernel_pm4);
+    kernel_pm4 = get_cr3();
+    user_pm4 = create_user_address_space(kernel_pm4);
     map_video_buffer(user_pm4);
 
     printk("Kernel PML4 at PA 0x%08X%08X\n", (uint32_t)(kernel_pm4 >> 32), (uint32_t)(kernel_pm4 & 0xFFFFFFFF));
@@ -79,33 +83,27 @@ void kernel_init() {
     modify_test->ops->read(modify_test, 0, 512, test_buf);
     printk("Content of MODIFY.TXT: %s\n", test_buf); */
 
+    pci_check_all_buses();
+    bga_detect_and_map();
+
+    video_device_t g_dev;
+    gfx_surface_t g_screen;
+    bochs_vbe_init(&g_dev);
+    gfx_surface_from_device(&g_screen, &g_dev);
+    //g_dev.ops->putpixel(&g_dev, 50, 50, 0x00ff00);
+    g_screen.ops->draw_rect(&g_screen, 0, 736, 1024, 32, 0x00ff00);
+    //putpixel(50, 50, 0x00ff00);
+
+    while (1);
+
     vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
 
     uint64_t entry_point = load_elf(user_pm4, test_node);
     printk("ELF entry point: 0x%08X%08X\n", (uint32_t)(entry_point >> 32), (uint32_t)(entry_point & 0xFFFFFFFF));
-
-    //dump_chunk((void*)entry_point, 1);
-
-    // vmm_debug_page((uint64_t)user_stack-8);
-
-    uint64_t actual_entry = (uint64_t)pt_get_pte(user_pm4, entry_point, 0, 0);
-    printk("Entry point PTE: 0x%08X%08X\n", (uint32_t)(actual_entry >> 32), (uint32_t)(actual_entry & 0xFFFFFFFF));
-
     printk("kernel tss rsp0 = %p\n", kernel_tss.rsp0);
 
     video.frame_buf = (uint8_t*)0xFFFFFFFFC3000000ULL;
     pt_debug_walk(user_pm4, 0xFFFFFFFFC3000000ULL);
-
-    current_thread = thread_a;
-    thread_a = thread_create("Task_A", 1, task_a, NULL);
-    thread_b = thread_create("Task_B", 1, task_b, NULL);
-    init_multitasking();
-    timer_init(100);
-    __asm__ volatile ("sti");
-
-    while (1) {
-        asm volatile ("hlt");
-    }
 
     // 切到目标进程地址空间
     asm volatile("mov %0, %%cr3" : : "r"(user_pm4) : "memory");
@@ -131,16 +129,14 @@ void kernel_init() {
     while (1) {
         asm volatile ("hlt");
     }
-
-    thread_a = thread_create("Task_A", 1, (thread_func_t)entry_point, NULL);
-    //thread_b = thread_create("Task_B", 1, task_b, NULL);
-
+/*
     current_thread = thread_a;
+    thread_a = thread_create(user_pm4, "Task_A", 1, task_a, NULL);
+    thread_b = thread_create(user_pm4, "Task_B", 1, task_b, NULL);
 
     init_multitasking();
     timer_init(100);
-
-    __asm__ volatile ("sti");
+    __asm__ volatile ("sti");*/
 
     while (1) {
         asm volatile ("hlt");
