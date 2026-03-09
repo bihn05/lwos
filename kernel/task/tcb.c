@@ -81,13 +81,13 @@ void task_a(void* arg) {
     while (1) {
         printk("A");
         // 适当延时，防止打印太快看不清
-        for(volatile int i=0; i<1000000; i++); 
+        for(volatile int i=0; i<1000; i++); 
     }
 }
 void task_b(void* arg) {
     while (1) {
         printk("B");
-        for(volatile int i=0; i<1000000; i++); 
+        for(volatile int i=0; i<1000; i++); 
     }
 }
 task_struct_t* main_thread;
@@ -106,6 +106,6 @@ void init_multitasking() {
 
     // 连成环：main -> A -> B -> main
     main_thread->next = thread_a;
-    thread_a->next = main_thread;
-    //thread_b->next = main_thread;
+    thread_a->next = thread_b;
+    thread_b->next = main_thread;
 }

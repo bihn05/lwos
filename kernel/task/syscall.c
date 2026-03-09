@@ -38,17 +38,15 @@ void dump_syscall_stack(syscall_regs_t *regs) {
         printk("\n");
     }
     printk("====================================================\n\n");
-}/*
+}
 void syscall_handler(syscall_regs_t *regs) {
-    printk("a");
     //dump_syscall_stack(regs);
-    while (1);
     uint64_t syscall_no = regs->rax;
     uint64_t ret = 0;
-    //printk("[SYSCALL] regs_ptr: %p, RAX=%d, RIP=%p\n", regs, (int)regs->rax, regs->rip);
-    while (1);
+    printk("[SYSCALL] regs_ptr: %p, RAX=%d, RIP=%p\n", regs, (int)regs->rax, regs->rip);
+
     // dump_chunk((void*)0x8ffc0, 1);
-    //printk("arg1(fd)=%d, arg2(buf)=%p, arg3(len)=%d\n", (int)regs->rdi, regs->rsi, (int)regs->rdx);
+    printk("arg1(fd)=%d, arg2(buf)=%p, arg3(len)=%d\n", (int)regs->rdi, regs->rsi, (int)regs->rdx);
 
     switch (syscall_no) {
         case SYS_WRITE:
@@ -59,7 +57,7 @@ void syscall_handler(syscall_regs_t *regs) {
             
             // 假设你内核里有一个处理打印的函数
             // ret = console_write(fd, buf, len);
-            printk("[User] 0x%p: %02x\n", buf, (uint8_t)buf[0]); // 测试用
+            printk("[User] 0x%p: %s\n", buf, buf); // 测试用
             ret = len; 
             break;
             
@@ -74,9 +72,6 @@ void syscall_handler(syscall_regs_t *regs) {
     // 关键一步：将返回值写回栈上的 rax 位置。
     // 这样汇编 pop rax 时，用户态就能在 rax 里拿到返回值了。
     regs->rax = ret; 
-}*/
-extern video_t video;
-void syscall_handler(syscall_regs_t *regs) {
-    putchar(&video, 'a');
-    for (;;) { }
 }
+extern video_t video;
+extern void test_serial();

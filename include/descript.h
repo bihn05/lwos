@@ -42,13 +42,14 @@ typedef struct {
 #pragma pack(pop)
 
 // 全局变量
-static gdt_entry_t gdt[GDT_ENTRIES];
-static tss_t       kernel_tss;
+extern gdt_entry_t gdt[GDT_ENTRIES];
+extern tss_t       kernel_tss;
 
 extern void load_segments();
 void gdt_set_gate(int num, uint8_t access, uint8_t gran);
 void gdt_set_tss(int num, uint64_t base, uint32_t limit);
 void gdt_tss_init();
 extern void tss_late_init();
+extern void ist_init(uint64_t pml4_pa);
 
 #endif

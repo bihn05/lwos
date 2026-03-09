@@ -1,7 +1,7 @@
 
 #include <descript.h>
 #include <string.h>
-
+gdt_entry_t gdt[GDT_ENTRIES];
 // 设置常规 8 字节描述符
 void gdt_set_gate(int num, uint8_t access, uint8_t gran) {
     gdt[num].base_low    = 0;

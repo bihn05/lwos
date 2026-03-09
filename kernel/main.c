@@ -38,8 +38,20 @@ void kernel_init() {
     idt_init();
     pmm_init();
     kheap_init();
-    uint64_t user_pm4 = create_user_address_space();
+    uint64_t kernel_pm4 = get_cr3();
+    uint64_t user_pm4 = create_user_address_space(kernel_pm4);
+    map_video_buffer(user_pm4);
+
+    printk("Kernel PML4 at PA 0x%08X%08X\n", (uint32_t)(kernel_pm4 >> 32), (uint32_t)(kernel_pm4 & 0xFFFFFFFF));
+    printk("User PML4 at PA 0x%08X%08X\n", (uint32_t)(user_pm4 >> 32), (uint32_t)(user_pm4 & 0xFFFFFFFF));
+
+    if (!map_user_stack(user_pm4, USER_STACK_TOP, USER_STACK_SIZE)) {
+        printk("Failed to map user stack\n");
+        while (1) asm volatile ("hlt");
+    }
     tss_late_init(user_pm4);
+    ist_init(user_pm4);
+
     ata_init();
     ata_detect_drives();
 
@@ -79,10 +91,22 @@ void kernel_init() {
     uint64_t actual_entry = (uint64_t)pt_get_pte(user_pm4, entry_point, 0, 0);
     printk("Entry point PTE: 0x%08X%08X\n", (uint32_t)(actual_entry >> 32), (uint32_t)(actual_entry & 0xFFFFFFFF));
 
-    if (!map_user_stack(user_pm4, USER_STACK_TOP, USER_STACK_SIZE)) {
-        printk("Failed to map user stack\n");
-        while (1) asm volatile ("hlt");
+    printk("kernel tss rsp0 = %p\n", kernel_tss.rsp0);
+
+    video.frame_buf = (uint8_t*)0xFFFFFFFFC3000000ULL;
+    pt_debug_walk(user_pm4, 0xFFFFFFFFC3000000ULL);
+
+    current_thread = thread_a;
+    thread_a = thread_create("Task_A", 1, task_a, NULL);
+    thread_b = thread_create("Task_B", 1, task_b, NULL);
+    init_multitasking();
+    timer_init(100);
+    __asm__ volatile ("sti");
+
+    while (1) {
+        asm volatile ("hlt");
     }
+
     // 切到目标进程地址空间
     asm volatile("mov %0, %%cr3" : : "r"(user_pm4) : "memory");
 

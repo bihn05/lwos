@@ -1,4 +1,5 @@
 [bits 64]
+section .text
 extern interrupt_handler
 
 ; ---------------------------------------------------
@@ -80,6 +81,8 @@ isr_common:
     push r14
     push r15
 
+    cld
+
     ; 2. 按照 System V ABI，将栈顶指针作为第一个参数放入 RDI
     mov rdi, rsp 
 
@@ -109,15 +112,6 @@ isr_common:
     ; 6. 使用 64 位的 iretq 返回！
     iretq
 
-section .data
-global isr_stub_table
-isr_stub_table:
-%assign i 0
-%rep 256
-    dq isr%+i    ; dq 表示 64 位地址 (8字节)
-%assign i i+1
-%endrep
-
 global isr_syscall_stub
 extern syscall_handler
 
@@ -138,6 +132,8 @@ isr_syscall_stub:
     push r13
     push r14
     push r15
+
+    cld
 
     ; 2. 将当前的栈顶指针 (rsp) 作为第一个参数 (rdi) 传给 C 函数
     ; 这样 C 函数就能通过结构体指针访问所有寄存器
@@ -164,3 +160,15 @@ isr_syscall_stub:
 
     ; 5. 跨特权级返回用户态
     iretq
+    
+global isr_syscall_stub
+extern syscall_handler
+
+section .data
+global isr_stub_table
+isr_stub_table:
+%assign i 0
+%rep 256
+    dq isr%+i    ; dq 表示 64 位地址 (8字节)
+%assign i i+1
+%endrep

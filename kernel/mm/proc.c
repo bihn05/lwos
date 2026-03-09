@@ -2,19 +2,17 @@
 
 extern uint64_t get_cr3(void);
 
-uint64_t create_user_address_space(void) {
+uint64_t create_user_address_space(uint64_t kernel_pml4_pa) {
     uint64_t new_pml4_pa = pmm_alloc_page();
     if (!new_pml4_pa) return 0;
 
     memset(pa_to_ptr(new_pml4_pa), 0, PAGE_SIZE);
 
-    uint64_t* new_pml4 = (uint64_t*)pa_to_ptr(new_pml4_pa);
-    uint64_t* kernel_pml4 = (uint64_t*)pa_to_ptr(get_cr3());
+    uint64_t* new_pml4    = (uint64_t*)pa_to_ptr(new_pml4_pa);
+    uint64_t* kernel_pml4 = (uint64_t*)pa_to_ptr(kernel_pml4_pa);
 
-    // 只复制高半区内核映射
-    for (int i = 256; i < 512; i++) {
-        new_pml4[i] = kernel_pml4[i];
-    }
+    // 复制内核所在的高半区 PML4 项
+    new_pml4[511] = kernel_pml4[511];
 
     return new_pml4_pa;
 }

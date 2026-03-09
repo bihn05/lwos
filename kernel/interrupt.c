@@ -35,7 +35,7 @@ void idt_set_gate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags, uint8
     idt[num].offset_high = (base >> 32) & 0xFFFFFFFF;
     idt[num].zero        = 0;
 }
-
+extern void page_fault_handler(int_registers_t* regs);
 // 极其优雅的 IDT 初始化
 void idt_init() {
     // 一个循环搞定 256 个中断门！
@@ -52,6 +52,7 @@ void idt_init() {
 
     idt_set_gate(0x20, isr_stub_table[32], KERNEL_CS, IDT_INT_GATE_64, 0);
     idt_set_gate(0x80, (uint64_t)isr_syscall_stub, KERNEL_CS, IDT_INT_GATE_USER, 0);
+    idt_set_gate(14, isr_stub_table[14],  KERNEL_CS, IDT_INT_GATE_64, 1);
 
     idt_pointer.limit = sizeof(idt) - 1;
     idt_pointer.base  = (uint64_t)&idt[0];

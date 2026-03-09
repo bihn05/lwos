@@ -28,6 +28,17 @@
 #define KERNEL_STACK_SIZE        0x4000ULL           // 16 KiB
 #define KERNEL_STACK_STRIDE      0x5000ULL           // 多一页 guard
 
+#define PAGE_FAULT_STACK_BASE    0xFFFFFFFFC1000000ULL
+#define PAGE_FAULT_STACK_SIZE    0x4000ULL           // 16 KiB
+#define PAGE_FAULT_STACK_TOP     (PAGE_FAULT_STACK_BASE + PAGE_FAULT_STACK_SIZE)
+
+#define DOUBLE_FAULT_STACK_BASE  0xFFFFFFFFC2000000ULL
+#define DOUBLE_FAULT_STACK_SIZE  0x4000ULL           // 16 KiB
+#define DOUBLE_FAULT_STACK_TOP   (DOUBLE_FAULT_STACK_BASE + DOUBLE_FAULT_STACK_SIZE)
+
+#define LEGACY_FB_PHYS_BASE   0x000A0000ULL
+#define LEGACY_FB_SIZE        0x00009600ULL
+#define LEGACY_FB_VIRT_BASE   0xFFFFFFFFC3000000ULL
 typedef struct trap_frame {
     uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
     uint64_t rbp, rdi, rsi, rdx, rcx, rbx, rax;
@@ -56,10 +67,10 @@ typedef struct process {
     thread_t main_thread;
 } process_t;
 
-uint64_t create_user_address_space(void);
+uint64_t create_user_address_space(uint64_t kernel_pml4_pa);
 int map_user_stack(uint64_t pml4_pa, uint64_t stack_top, uint64_t size);
 int alloc_thread_kernel_stack(thread_t* th, uint64_t kernel_pml4_pa);
-
+void map_video_buffer(uint64_t pml4_pa);
 static uint64_t g_next_kstack_slot;
 
 #endif
