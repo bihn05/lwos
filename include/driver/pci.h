@@ -104,4 +104,14 @@ uint16_t pci_get_device_id(uint8_t bus, uint8_t slot, uint8_t func);
 uint16_t pci_addr_vendor_id(pci_addr_t addr);
 uint16_t pci_addr_device_id(pci_addr_t addr);
 
+typedef struct {
+    bool found;
+    pci_addr_t addr;
+    uint16_t vendor_id;
+    uint16_t device_id;
+    uint8_t class_code;
+    uint8_t subclass;
+    uint8_t prog_if;
+} pci_display_device_t;
+
 #endif

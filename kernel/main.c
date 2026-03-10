@@ -17,6 +17,7 @@
 #include <graphics.h>
 #include <driver/kbc.h>
 #include <driver/tty.h>
+#include <driver/video_probe.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
@@ -91,7 +92,22 @@ void kernel_init() {
     kbc_init();
     asm volatile ("sti");
 
+    video_device_t g_video_dev;
 
+    if (video_probe_primary(&g_video_dev)) {
+        printk("Primary video device ready: %ux%ux%u\n",
+               g_video_dev.width,
+               g_video_dev.height,
+               g_video_dev.bpp);
+    } else {
+        printk("No usable primary video device.\n");
+        while (1) asm volatile ("hlt");
+    }
+
+    g_video_dev.ops->fill(&g_video_dev, 0x00ff00); // 黑屏
+
+        while (1) asm volatile ("hlt");
+        
     video_device_t g_dev;
     gfx_surface_t g_screen;
     tty_t tty;
