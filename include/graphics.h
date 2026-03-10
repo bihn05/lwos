@@ -5,6 +5,7 @@
 #include <driver/pci.h>
 #include <driver/graphic/vbe.h>
 #include <mm/mmio.h>
+#include <print.h>
 
 typedef struct {
     uint32_t width;
@@ -54,7 +55,8 @@ typedef struct gfx_surface gfx_surface_t;
 
 typedef struct {
     void (*putpixel)(gfx_surface_t *surf, uint32_t x, uint32_t y, uint32_t color);
-    void (*draw_rect)(gfx_surface_t *surf, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color);
+    void (*draw_rect)(gfx_surface_t *surf, bool fill, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color);
+    void (*draw_char)(gfx_surface_t *surf, uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg);
     void (*fill)(gfx_surface_t *surf, uint32_t color);
 } gfx_ops_t;
 

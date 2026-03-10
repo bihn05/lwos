@@ -1,6 +1,7 @@
 #include <interrupt.h>
 #include <printk.h>
 #include <tools.h>
+#include <driver/kbc.h>
 
 // 全局 IDT 表与指针
 static idt_entry_t idt[IDT_ENTRIES];
@@ -103,11 +104,10 @@ void interrupt_handler(int_registers_t* regs) {
     else if (int_no >= 32 && int_no <= 47) {
         uint64_t irq_no = int_no - 32;
         
-        // 在这里分发给键盘、时钟等驱动...
-        // if (irq_no == 1) keyboard_handler();
-
-        if (irq_no == 0) {
-            timer_handler(regs); // 时钟中断
+        switch (irq_no) {
+            case 0:timer_handler(regs); break; // 时钟中断
+            case 1:kbc_interrupt_handler(); break; // 键盘中断
+            default:break;
         }
         
         // 处理完必须向 PIC 发送 EOI，否则后续中断将被阻塞
@@ -119,6 +119,6 @@ extern video_t video;
 extern void schedule();
 
 void timer_handler(int_registers_t* regs) {
-    outb(0x20, 0x20);
+    //outb(0x20, 0x20);
     schedule();
 }

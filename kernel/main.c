@@ -15,6 +15,8 @@
 #include <network.h>
 #include <mm/proc.h>
 #include <graphics.h>
+#include <driver/kbc.h>
+#include <driver/tty.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
@@ -86,13 +88,18 @@ void kernel_init() {
     pci_check_all_buses();
     bga_detect_and_map();
 
+    kbc_init();
+    asm volatile ("sti");
+
+
     video_device_t g_dev;
     gfx_surface_t g_screen;
+    tty_t tty;
     bochs_vbe_init(&g_dev);
     gfx_surface_from_device(&g_screen, &g_dev);
-    //g_dev.ops->putpixel(&g_dev, 50, 50, 0x00ff00);
-    g_screen.ops->draw_rect(&g_screen, 0, 736, 1024, 32, 0x00ff00);
-    //putpixel(50, 50, 0x00ff00);
+    tty_init(&tty, &g_screen, 0x00FF00, 0x000000, 8, 16);
+
+    tty_write(&tty, "Welcome to LWOS!\0");
 
     while (1);
 

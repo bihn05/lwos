@@ -111,20 +111,39 @@ void gfx_fill(gfx_surface_t *surf, uint32_t color) {
         surf->device->ops->fill(surf->device, color);
     }
 }
-void gfx_draw_rect(gfx_surface_t *surf, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
-    for (uint32_t i = 0; i < w; i++) {
-        gfx_putpixel(surf, x + i, y, color);
-        gfx_putpixel(surf, x + i, y + h - 1, color);
+void gfx_draw_rect(gfx_surface_t *surf, bool fill, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+    if (fill) {
+        for (uint32_t j = 0; j < h; j++) {
+            for (uint32_t i = 0; i < w; i++) {
+                gfx_putpixel(surf, x + i, y + j, color);
+            }
+        }
+    } else {
+        for (uint32_t i = 0; i < w; i++) {
+            gfx_putpixel(surf, x + i, y, color);
+            gfx_putpixel(surf, x + i, y + h - 1, color);
+        }
+        for (uint32_t j = 0; j < h; j++) {
+            gfx_putpixel(surf, x, y + j, color);
+            gfx_putpixel(surf, x + w - 1, y + j, color);
+        }
     }
-    for (uint32_t j = 0; j < h; j++) {
-        gfx_putpixel(surf, x, y + j, color);
-        gfx_putpixel(surf, x + w - 1, y + j, color);
+}
+void gfx_draw_char(gfx_surface_t *surf, uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg) {
+    gfx_draw_rect(surf, true, x, y, 8, 16, bg);
+    for (int j=0;j<16;j++) {
+        for (int i=0;i<8;i++) {
+            if (g_8x16_font[(uint8_t)c*16 + j] & (1 << (7 - i))) {
+                gfx_putpixel(surf, x + i, y + j, fg);
+            }
+        }
     }
 }
 
 static const gfx_ops_t gfx_draw_ops = {
     .putpixel = gfx_putpixel,
     .draw_rect = gfx_draw_rect,
+    .draw_char = gfx_draw_char,
     .fill = gfx_fill,
 };
 
