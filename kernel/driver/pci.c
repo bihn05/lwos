@@ -169,11 +169,16 @@ pci_bar_info_t pci_read_bar(uint8_t bus, uint8_t slot, uint8_t func, uint8_t bar
 
     uint32_t orig = pci_config_read(bus, slot, func, off);
     if (orig == 0 || orig == 0xFFFFFFFF) {
+        info.type = PCI_BAR_NONE;
         return info;
     }
 
+    // I/O BAR
     if (orig & 0x1) {
+        info.type = PCI_BAR_IO;
         info.is_io = true;
+        info.is_64 = false;
+        info.prefetchable = false;
         info.base = (uint64_t)(orig & ~0x3U);
 
         pci_config_write(bus, slot, func, off, 0xFFFFFFFF);
@@ -184,27 +189,33 @@ pci_bar_info_t pci_read_bar(uint8_t bus, uint8_t slot, uint8_t func, uint8_t bar
         return info;
     }
 
+    // Memory BAR
     info.is_io = false;
-    uint32_t type = (orig >> 1) & 0x3;
+    uint32_t mem_type = (orig >> 1) & 0x3;
     info.prefetchable = (orig >> 3) & 1;
 
-    if (type == 0x2) {
+    if (mem_type == 0x2) {
+        // 64-bit memory BAR
+        info.type = PCI_BAR_MEM64;
         info.is_64 = true;
 
         uint32_t orig_hi = pci_config_read(bus, slot, func, off + 4);
-        info.base = ((uint64_t)orig_hi << 32) | (orig & ~0xFULL);
+        info.base = ((uint64_t)orig_hi << 32) | (uint64_t)(orig & ~0xFULL);
 
         pci_config_write(bus, slot, func, off, 0xFFFFFFFF);
         pci_config_write(bus, slot, func, off + 4, 0xFFFFFFFF);
+
         uint32_t size_lo = pci_config_read(bus, slot, func, off);
         uint32_t size_hi = pci_config_read(bus, slot, func, off + 4);
 
         pci_config_write(bus, slot, func, off, orig);
         pci_config_write(bus, slot, func, off + 4, orig_hi);
 
-        uint64_t mask = ((uint64_t)size_hi << 32) | (size_lo & ~0xFULL);
+        uint64_t mask = ((uint64_t)size_hi << 32) | (uint64_t)(size_lo & ~0xFULL);
         info.size = ~mask + 1;
-    } else {
+    } else if (mem_type == 0x0) {
+        // 32-bit memory BAR
+        info.type = PCI_BAR_MEM32;
         info.is_64 = false;
         info.base = (uint64_t)(orig & ~0xFULL);
 
@@ -213,6 +224,9 @@ pci_bar_info_t pci_read_bar(uint8_t bus, uint8_t slot, uint8_t func, uint8_t bar
         pci_config_write(bus, slot, func, off, orig);
 
         info.size = (uint32_t)(~(sized & ~0xFULL) + 1);
+    } else {
+        // 0x1 保留；0x3 保留
+        info.type = PCI_BAR_NONE;
     }
 
     return info;

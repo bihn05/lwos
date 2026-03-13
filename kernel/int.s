@@ -164,6 +164,34 @@ isr_syscall_stub:
 global isr_syscall_stub
 extern syscall_handler
 
+extern switch_to
+extern timer_tick_accounting
+
+global timer_interrupt_entry
+
+timer_interrupt_entry:
+    push rax
+    push rbx
+    push rcx
+    push rdx
+    push rbp
+    push rdi
+    push rsi
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+
+    mov rdi, rsp
+    call timer_tick_accounting   ; 这里发 EOI，也可顺便记 tick
+
+    mov rdi, rsp
+    call switch_to
+
 section .data
 global isr_stub_table
 isr_stub_table:

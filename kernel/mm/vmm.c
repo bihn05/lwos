@@ -24,7 +24,7 @@ int vmm_map_page(uint64_t pml4_pa, uint64_t va, uint64_t pa, uint64_t flags) {
 
     if (*pte & PTE_P) {
         printk("VMM: Warning - VA 0x%08X%08X is already mapped, skipping\n", (uint32_t)(va >> 32), (uint32_t)(va & 0xFFFFFFFF));
-        return 0; // 暂时不允许覆盖
+        return 1; // 暂时允许覆盖
     }
 
     *pte = (pa & PAGE_MASK) | flags | PTE_P;

@@ -4,6 +4,9 @@
 
 #include <driver/graphic/intel.h>
 
+#include <driver/kbc.h>
+#include <mm/mmio.h>
+
 #define VBE_DISPI_IOPORT_INDEX 0x01CE
 #define VBE_DISPI_IOPORT_DATA  0x01CF
 #define VBE_DISPI_INDEX_ID     0x0
@@ -114,7 +117,7 @@ bool video_probe_primary(video_device_t *dev) {
     // 当前先只识别，不初始化实体机显卡
     // 以后你可以在这里按 vendor/device 绑定不同驱动：
     //
-    if (disp.vendor_id == 0x8086) return intel_gpu_init(dev, &disp);
+    if (disp.vendor_id == 0x8086) return intel_gpu_init(dev, &disp, disp.device_id);
     // if (disp.vendor_id == 0x10DE) return nvidia_init(dev, &disp);
     // if (disp.vendor_id == 0x1002) return amd_init(dev, &disp);
     //
@@ -122,15 +125,36 @@ bool video_probe_primary(video_device_t *dev) {
     return false;
 }
 extern uint64_t kernel_pm4;
-bool intel_gpu_init(video_device_t *dev, pci_display_device_t *disp) {
+bool intel_gpu_init(video_device_t *dev, pci_display_device_t *disp, uint16_t device_id) {
     if (!dev || !disp) return false;
 
     intel_gpu_info_t info;
-    if (!intel_gpu_probe(disp, &info)) {
-        return false;
+    switch (device_id) {
+        case 0x2A42: // Intel GMA 4500MHD
+            printk("[video] Detected Intel GMA 4500MHD, probing with intel_gpu_probe_0x2A42...\n");
+            if (!intel_gpu_probe_0x2A42(disp, &info)) {
+            return false;
+        }
+            break;
+        default:
+            printk("[video] Detected Intel GPU with device_id=0x%04X, but no specific probe function for it.\n", device_id);
+            return false;
     }
 
-    info.mmio_virt = mmio_map_region(kernel_pm4, info.mmio_bar.base, info.mmio_bar.size, PTE_PCD | PTE_PWT);
+    uint64_t cur = get_cr3();
+    printk("current cr3 = %p, kernelpm4 = %p\n", cur, kernel_pm4);
+    info.mmio_virt = mmio_map_region(cur, info.mmio_bar.base, info.mmio_bar.size, PTE_P | PTE_PCD | PTE_PWT);
+    pt_debug_walk(cur, (uint64_t)info.mmio_virt);
+
+    for (uint32_t off = 0x70000; off < 0x400000; off += 16) {
+        for (uint32_t i = 0; i < 4; i++) {
+            uint32_t val = mmio_read32(info.mmio_virt, off + i * 4);
+            printk("MMIO[0x%03X] = 0x%08X ", off + i * 4, val);
+        }
+        printk("\n");
+        getch();
+    }
+
     uint32_t v0 = mmio_read32(info.mmio_virt, 0x0000);
     uint32_t v1 = mmio_read32(info.mmio_virt, 0x0004);
     printk("intel mmio test: 0x%08X 0x%08X\n", v0, v1);

@@ -36,6 +36,18 @@ void display_banner() {
 	printk("                                                  \n");
 	printk("   CODE is COSTARICA                              \n\n");
 }
+void task_a(void* arg) {
+    while (1) {
+        printk("A");
+        for (volatile int i=0;i<10000000;i++);
+    }
+}
+void task_b(void* arg) {
+    while (1) {
+        printk("B");
+        for (volatile int i=0;i<10000000;i++);
+    }
+}
 void kernel_init() {
     video.frame_buf = (uint8_t*)0xa0000;
     writereg_video(g_640x480x2);
@@ -87,11 +99,24 @@ void kernel_init() {
     printk("Content of MODIFY.TXT: %s\n", test_buf); */
 
     pci_check_all_buses();
-    bga_detect_and_map();
+    // bga_detect_and_map();
 
-    kbc_init();
-    asm volatile ("sti");
+    video.frame_buf = (uint8_t*)0xFFFFFFFFC3000000ULL;
+    pt_debug_walk(user_pm4, 0xFFFFFFFFC3000000ULL);
+    //kbc_init();
 
+    init_multitasking();
+
+    task_struct_t* thread_a = thread_start(kernel_pm4, "Task_A", 1, task_a, NULL);
+    task_struct_t* thread_b = thread_start(kernel_pm4, "Task_B", 1, task_b, NULL);
+
+    timer_init(10);
+    __asm__ volatile ("sti");
+
+    while (1) {
+        asm volatile ("hlt");
+    }
+/*
     video_device_t g_video_dev;
 
     if (video_probe_primary(&g_video_dev)) {
@@ -151,19 +176,7 @@ void kernel_init() {
 
     while (1) {
         asm volatile ("hlt");
-    }
-/*
-    current_thread = thread_a;
-    thread_a = thread_create(user_pm4, "Task_A", 1, task_a, NULL);
-    thread_b = thread_create(user_pm4, "Task_B", 1, task_b, NULL);
-
-    init_multitasking();
-    timer_init(100);
-    __asm__ volatile ("sti");*/
-
-    while (1) {
-        asm volatile ("hlt");
-    }
+    }*/
 
     /*
     pci_check_all_buses();

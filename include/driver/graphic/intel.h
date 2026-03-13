@@ -17,6 +17,6 @@ typedef struct {
     void *aper_virt;
 } intel_gpu_info_t;
 
-bool intel_gpu_probe(pci_display_device_t *disp, intel_gpu_info_t *out);
+bool intel_gpu_probe_0x2A42(pci_display_device_t *disp, intel_gpu_info_t *out);
 
 #endif

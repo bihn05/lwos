@@ -1,4 +1,5 @@
 #include <mm/mmio.h>
+#include <printk.h>
 
 static uint64_t g_mmio_next = MMIO_VIRT_BASE;
 
@@ -25,7 +26,10 @@ void *mmio_map_region(uint64_t pm4_pa, uint64_t phys_base, uint64_t size, uint64
         uint64_t va = virt_base   + i * PAGE_SIZE;
 
         // 对 MMIO，至少建议 PCD=1，避免当普通 RAM 缓存
-        if (!vmm_map_page(pm4_pa, va, pa, PTE_RW | PTE_PCD)) {
+        if (!vmm_map_page(pm4_pa, va, pa, flags)) {
+            printk("MMIO: Failed to map PA 0x%08X%08X to VA 0x%08X%08X\n",
+                   (uint32_t)(pa >> 32), (uint32_t)(pa & 0xFFFFFFFF),
+                   (uint32_t)(va >> 32), (uint32_t)(va & 0xFFFFFFFF));
             return NULL;
         }
     }

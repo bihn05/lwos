@@ -45,15 +45,48 @@ typedef struct {
 } thread_stack_t;
 
 extern task_struct_t* current_thread;
-
-void kernel_thread_entry(thread_func_t function, void* func_arg);
-task_struct_t* thread_create(uint64_t pml4_pa, char* name, int priority, thread_func_t function, void* func_arg);
-void task_a(void* arg);
-void task_b(void* arg);
-void schedule();
 extern task_struct_t* main_thread;
-extern task_struct_t* thread_a;
-extern task_struct_t* thread_b;
+
+typedef struct intr_frame {
+    uint64_t r15;
+    uint64_t r14;
+    uint64_t r13;
+    uint64_t r12;
+    uint64_t r11;
+    uint64_t r10;
+    uint64_t r9;
+    uint64_t r8;
+    uint64_t rsi;
+    uint64_t rdi;
+    uint64_t rbp;
+    uint64_t rdx;
+    uint64_t rcx;
+    uint64_t rbx;
+    uint64_t rax;
+    uint64_t rip;
+    uint64_t cs;
+    uint64_t rflags;
+    uint64_t rsp;
+    uint64_t ss;
+} intr_frame_t;
+
+void kernel_thread_bootstrap(thread_func_t function, void* arg);
+intr_frame_t* schedule(intr_frame_t* current_frame);
 void init_multitasking();
+task_struct_t* thread_create(
+    uint64_t pml4_pa,
+    char* name,
+    int priority,
+    thread_func_t function,
+    void* func_arg
+);
+task_struct_t* thread_start(
+    uint64_t pml4_pa,
+    char* name,
+    int priority,
+    thread_func_t function,
+    void* func_arg
+);
+void timer_tick_accounting(intr_frame_t* frame);
 
 #endif

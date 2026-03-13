@@ -10,6 +10,7 @@ static idtr_t      idt_pointer;
 // 引入汇编里自动生成的 256 个函数地址的指针数组！
 extern uint64_t isr_stub_table[];
 extern void isr_syscall_stub();
+extern void timer_interrupt_entry(int_registers_t* regs);
 
 // 异常信息字符串数组 (扩展到 32 个，防止越界)
 static const char* exception_messages[32] = {
@@ -51,7 +52,7 @@ void idt_init() {
         idt_set_gate(i, isr_stub_table[i], KERNEL_CS, flags, 0);
     }
 
-    idt_set_gate(0x20, isr_stub_table[32], KERNEL_CS, IDT_INT_GATE_64, 0);
+    idt_set_gate(0x20, (uint64_t)timer_interrupt_entry, KERNEL_CS, IDT_INT_GATE_64, 0);
     idt_set_gate(0x80, (uint64_t)isr_syscall_stub, KERNEL_CS, IDT_INT_GATE_USER, 0);
     idt_set_gate(14, isr_stub_table[14],  KERNEL_CS, IDT_INT_GATE_64, 1);
 
@@ -105,7 +106,7 @@ void interrupt_handler(int_registers_t* regs) {
         uint64_t irq_no = int_no - 32;
         
         switch (irq_no) {
-            case 0:timer_handler(regs); break; // 时钟中断
+            // case 0:timer_interrupt_entry(regs); break; // 时钟中断
             case 1:kbc_interrupt_handler(); break; // 键盘中断
             default:break;
         }
@@ -113,12 +114,4 @@ void interrupt_handler(int_registers_t* regs) {
         // 处理完必须向 PIC 发送 EOI，否则后续中断将被阻塞
         send_eoi((uint8_t)irq_no);
     }
-}
-
-extern video_t video;
-extern void schedule();
-
-void timer_handler(int_registers_t* regs) {
-    //outb(0x20, 0x20);
-    schedule();
 }
