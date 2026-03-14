@@ -83,6 +83,7 @@ void kbc_interrupt_handler() {
             );
             if (ascii != 0) {
                 buffer_put(&kbd_buffer, ascii);
+                wake_up_one(&kbd_wait_queue);
             }
             break;
         }
@@ -130,10 +131,18 @@ bool kb_buffer_is_emtpy(keyboard_buffer_t* buf) {
 }
 
 char getch(void) {
-	while (kb_buffer_is_emtpy(&kbd_buffer)) {
-		__asm volatile("nop");
-	}
-	return buffer_get(&kbd_buffer);
+    for (;;) {
+        __asm__ volatile("cli");
+
+        if (!kb_buffer_is_emtpy(&kbd_buffer)) {
+            char c = buffer_get(&kbd_buffer);
+            __asm__ volatile("sti");
+            return c;
+        }
+
+        thread_block_on(&kbd_wait_queue);
+        /* 被唤醒后会回到这里，然后重新检查缓冲区 */
+    }
 }
 int try_getch(void) {
 	if (kb_buffer_is_emtpy(&kbd_buffer)) {

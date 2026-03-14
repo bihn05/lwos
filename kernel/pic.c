@@ -57,23 +57,16 @@ void IRQ_set_mask(uint8_t IRQline) {
 }
 
 void timer_init(uint32_t frequency) {
-    // 1. 计算分频值
-    // 注意：在 64 位下进行除法时，确保操作数类型正确以避免异常
     uint16_t divisor = (uint16_t)(PIT_BASE_FREQ / frequency);
 
-    // 2. 发送控制字
     outb(PIT_CMD_INIT, PIT_COMMAND_PORT);
 
-    // 3. 写入频率分频值 (先低 8 位，后高 8 位)
     outb((uint8_t)(divisor & 0xFF), PIT_CHANNEL0_DATA);
     outb((uint8_t)((divisor >> 8) & 0xFF), PIT_CHANNEL0_DATA);
     
-    // 4. 在 PIC 中开启时钟中断屏蔽位 (IRQ 0)
     IRQ_clear_mask(0); 
 }
-/**
- * 开启特定中断位
- */
+
 void IRQ_clear_mask(uint8_t IRQline) {
     uint16_t port;
     uint8_t value;

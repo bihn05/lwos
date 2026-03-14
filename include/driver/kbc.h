@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <driver/port.h>
 
+#include <task/tcb.h>
+
 #define KEYBOARD_DAT 0x60
 #define KEYBOARD_CMD 0x64
 

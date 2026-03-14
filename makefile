@@ -24,7 +24,7 @@ BOCHSDBG := bochsdbg
 # 3. 编译与链接选项
 NASM_FLAGS_BIN := -f bin
 NASM_FLAGS_ELF := -f elf64
-GCC_FLAGS := -m64 -mno-red-zone -mcmodel=kernel -mno-mmx -mno-sse -mno-sse2 \
+GCC_FLAGS := -m64 -mno-red-zone -mcmodel=kernel -msse -msse2 -mfpmath=sse \
              -Wimplicit-function-declaration -w -fno-builtin -ffreestanding \
              -nodefaultlibs -nostdinc -nostdlib -fno-pic -fno-pie \
              -fno-stack-protector -I$(INCLUDE_DIR) -fno-asynchronous-unwind-tables

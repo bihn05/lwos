@@ -43,7 +43,7 @@
 #define PIT_BASE_FREQ 1193182 
 
 // 默认触发频率 (例如 100 Hz，即每 10ms 触发一次)
-#define FREQ_T0 1000
+#define FREQ_T0 100
 
 void vpic_init(void);
 void send_eoi(uint8_t irq_num);

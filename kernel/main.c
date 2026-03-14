@@ -18,12 +18,18 @@
 #include <driver/kbc.h>
 #include <driver/tty.h>
 #include <driver/video_probe.h>
+#include <fpu.h>
 
 vfs_node_t* vfs_root = NULL;
 video_t video;
 pci_addr_t g_bga_pci_addr;
 uint64_t kernel_pm4;
 uint64_t user_pm4;
+task_struct_t* thread_idle = NULL;
+task_struct_t* thread_reap = NULL;
+task_struct_t* thread_a = NULL;
+task_struct_t* thread_b = NULL;
+extern void thread_exit_switch(intr_frame_t* next_frame);
 void display_banner() {
 	printk(" ___       ___       __   ________  ________      \n");
 	printk("|\\  \\     |\\  \\     |\\  \\|\\   __  \\|\\   ____\\     \n");
@@ -37,15 +43,32 @@ void display_banner() {
 	printk("   CODE is COSTARICA                              \n\n");
 }
 void task_a(void* arg) {
-    while (1) {
-        printk("A");
-        for (volatile int i=0;i<10000000;i++);
+    static int count = 0;
+    uint64_t out[2];
+    for (;;) {
+        printk("A%d",count);
+        count++;
+        if (count == 1)return;
+        thread_sleep_ticks(2);
     }
 }
 void task_b(void* arg) {
-    while (1) {
-        printk("B");
-        for (volatile int i=0;i<10000000;i++);
+    char ch_a;
+    printk("KEYBOARD INPUT:");
+    for (;;) {
+        ch_a = getch();
+        printk("%c", ch_a);
+    }
+}
+void idle_task(void* arg) {
+    for (;;) {
+        __asm__ volatile("sti; hlt; cli");
+    }
+}
+void reaper_task(void* arg) {
+    for (;;) {
+        reap_dead_threads();
+        thread_sleep_ticks(50);
     }
 }
 void kernel_init() {
@@ -60,6 +83,7 @@ void kernel_init() {
     kernel_pm4 = get_cr3();
     user_pm4 = create_user_address_space(kernel_pm4);
     map_video_buffer(user_pm4);
+    fpu_init();
 
     printk("Kernel PML4 at PA 0x%08X%08X\n", (uint32_t)(kernel_pm4 >> 32), (uint32_t)(kernel_pm4 & 0xFFFFFFFF));
     printk("User PML4 at PA 0x%08X%08X\n", (uint32_t)(user_pm4 >> 32), (uint32_t)(user_pm4 & 0xFFFFFFFF));
@@ -103,15 +127,30 @@ void kernel_init() {
 
     video.frame_buf = (uint8_t*)0xFFFFFFFFC3000000ULL;
     pt_debug_walk(user_pm4, 0xFFFFFFFFC3000000ULL);
-    //kbc_init();
+    kbc_init();
+    wait_queue_init(&kbd_wait_queue);
+
+    vfs_node_t* test_node = vfs_root->ops->finddir(vfs_root, "TEST.ELF");
+    uint64_t entry_point = load_elf(user_pm4, test_node);
 
     init_multitasking();
 
-    task_struct_t* thread_a = thread_start(kernel_pm4, "Task_A", 1, task_a, NULL);
-    task_struct_t* thread_b = thread_start(kernel_pm4, "Task_B", 1, task_b, NULL);
+    thread_idle = thread_start(kernel_pm4, "idle", 1, idle_task, NULL);
+    //thread_reap = thread_start(kernel_pm4, "reap", 1, reaper_task, NULL);
+    thread_a = thread_start(kernel_pm4, "Task_A", 1, task_a, NULL);
+    thread_b = thread_start(kernel_pm4, "Task_B", 1, task_b, NULL);
+    //task_struct_t* thread_e = process_create_from_elf(user_pm4, "Test", entry_point, USER_STACK_TOP);
 
-    timer_init(10);
+    ready_list_remove(main_thread);
+    main_thread->state = TASK_DEAD;
+    task_struct_t* next = pick_next_runnable();
+    current_thread = next;
+    next->state = TASK_RUNNING;
+
+    timer_init(FREQ_T0);
     __asm__ volatile ("sti");
+
+    thread_exit_switch((intr_frame_t*)next->kernel_stack);
 
     while (1) {
         asm volatile ("hlt");
@@ -149,9 +188,6 @@ void kernel_init() {
     uint64_t entry_point = load_elf(user_pm4, test_node);
     printk("ELF entry point: 0x%08X%08X\n", (uint32_t)(entry_point >> 32), (uint32_t)(entry_point & 0xFFFFFFFF));
     printk("kernel tss rsp0 = %p\n", kernel_tss.rsp0);
-
-    video.frame_buf = (uint8_t*)0xFFFFFFFFC3000000ULL;
-    pt_debug_walk(user_pm4, 0xFFFFFFFFC3000000ULL);
 
     // 切到目标进程地址空间
     asm volatile("mov %0, %%cr3" : : "r"(user_pm4) : "memory");

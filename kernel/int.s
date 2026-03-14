@@ -1,3 +1,5 @@
+; int.s
+
 [bits 64]
 section .text
 extern interrupt_handler
@@ -110,6 +112,7 @@ isr_common:
     add rsp, 16 
 
     ; 6. 使用 64 位的 iretq 返回！
+    xchg bx, bx
     iretq
 
 global isr_syscall_stub

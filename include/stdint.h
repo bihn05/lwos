@@ -34,4 +34,6 @@ typedef unsigned int       size_t;
 typedef uint64_t           time_t;
 typedef uint64_t           uintptr_t;
 
+#define offsetof(type, member) ((size_t)&(((type*)0)->member))
+
 #endif
