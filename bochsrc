@@ -1,0 +1,23 @@
+plugin_ctrl: unmapped=true, biosdev=true, speaker=true, extfpuirq=true, parallel=true, serial=true
+config_interface: textconfig
+display_library: x
+memory: guest=32, host=32
+romimage: file="/usr/local/share/bochs/BIOS-bochs-latest"
+vgaromimage: file="/usr/local/share/bochs/VGABIOS-lgpl-latest.bin"
+boot: disk
+ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="lwcnc.img", mode=flat, cylinders=130, heads=16, spt=63, sect_size=512
+ata0-slave: type=none
+ata1: enabled=false
+ata2: enabled=false
+ata3: enabled=false
+pci: enabled=1, chipset=i440fx
+cpu: count=1:1:1, ips=4000000, reset_on_triple_fault=1
+clock: sync=none, time0=local
+log: bochs.log
+panic: action=ask
+error: action=report
+info: action=report
+debug: action=ignore
+keyboard: type=mf, serial_delay=150
+mouse: type=ps2, enabled=false

@@ -1,0 +1,12 @@
+# Build artifacts
+*.o
+*.bin
+*.elf
+*.img
+fsroot/
+tools/mkfat/mkfat
+
+# Logs
+*.log
+
+# SPEC/ and report/ are tracked on purpose — do not ignore
