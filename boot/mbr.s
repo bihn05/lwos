@@ -95,9 +95,9 @@ disk_err:
 
 boot_drv: db 0x80
 str_suc: db 'MBR', 0xd, 0xa, 0
-str_fail: db 'FAIL', 0
-str_use_chs: db 'USE CHS', 0
-str_use_lbd: db 'TRY LBA', 0
+str_fail: db 'FAIL', 0xd, 0xa, 0
+str_use_chs: db 'USE CHS', 0xd, 0xa,  0
+str_use_lbd: db 'TRY LBA', 0xd, 0xa, 0
 
 times 0x1be-($-$$) db 0
 partition_table:
