@@ -1,49 +1,42 @@
 # LWOS
 
-**i hand/manually wrote everything ...**
+**所有的内容都是手工编写的...**
 
-A hobby operating system with an IBM-PC-inspired look and feel, aimed at
-CNC (computer numerical control) milling devices.
+一个面向CNC (计算机数控) 铣削设备的业余操作系统，外观和操作感受受到 IBM-PC 启发。
+注意：LWOS在风格上类似IBM-PC，但是不依赖BIOS。固件支持（自定义BIOS、IBM兼容机）属于另一个独立项目，不是本项目范围内的。
 
-Note: LWOS is *stylistically* IBM-PC-like, but it does **not** depend on the
-BIOS. Firmware support (custom BIOS, IBM-compatible machines) lives in a
-separate project and is out of scope here.
+> **状态:** LWOS在早期阶段正在积极重构。仓库正在从零开始重建和标准化，因此API、目录结构可能随时变更，不会通知，磁盘结构是FAT32+自制LOADER。
 
-> **Status:** early, under active refactor. The repository is being rebuilt
-> and standardized from scratch, so APIs, layout, and on-disk formats may
-> change without notice.
+## 目前可用的功能
 
-## What works today
+- **MBR** — 用于引导系统盘和分区表。
+- **FAT32 (read-only)** — 简化版FAT32读取实现在loader里，以后会写高级的多级目录+读写。
+- **`tools/mkfat`** — 一个用于创建FAT镜像的小工具，用C语言实现。
 
-- **MBR** — a Master Boot Record that boots the system.
-- **FAT32 (read-only)** — minimal FAT32 reading.
-- **`tools/mkfat`** — a small C utility for creating FAT images.
+其他所有内容（shell、实用工具、CNC栈）还在规划中，没全实现。
 
-Everything else (shell, utilities, CNC stack) is planned but not yet present.
+## 正在规划的
 
-## Planned
+- `MONITOR.BIN` — 仿照MS-DOS `DEBUG.COM`但是包含更多ABI的一个调试器
+- `EDIT.EXE` — 仿照MS-DOS `EDIT.COM`的文本编辑器
+- 关于设计、内存布局的存档
 
-- `DEBUG` — a debugger modeled after MS-DOS `DEBUG.COM`
-- `EDIT` — a text editor modeled after MS-DOS `EDIT.COM`
-- Documentation for design, memory layout, and CNC routing
+## 仓库结构
+    boot/   MBR和早期引导代码
+    fsroot/ 用于构建FAT32的暂用目录
+    tools/  宿主机侧实用工具
+    report/ 评审笔记（review）
+    SPEC/   规格书
 
-## Repository Layout
+## 构建与运行
 
-    boot/       MBR and early boot code
-    fsroot/     FAT32 (read-only) implementation
-    tools/      Host-side utilities (e.g. mkfat)
-    report/     review notes
-    SPEC/       Design and route documentation
+要求：
 
-## Building and Running
-
-Requirements:
-
-- A Unix-like environment with `make`
-- A C compiler (for `tools/`)
+- 有 `make` 的 Unix 类环境
+- C 编译器
 - [QEMU](https://www.qemu.org/) or [Bochs](https://bochs.sourceforge.io/)
 
-Build and boot in the emulator:
+在模拟器中构建并启动：
 
 ```sh
 make run
