@@ -38,6 +38,9 @@ enum {
     LW_SLOT_CONSOLE_CLEAR       = 0x17,
     LW_SLOT_CONSOLE_DUMP128     = 0x18,
     LW_SLOT_CONSOLE_PUT_DEC32   = 0x19,
+    LW_SLOT_CONSOLE_GETK        = 0x1a,
+    LW_SLOT_CONSOLE_GETC        = 0x1b,
+    LW_SLOT_CONSOLE_GETP        = 0x1c,
 
     // devices
     // not out dx, al because this way may
@@ -49,6 +52,7 @@ enum {
     LW_SLOT_IO_INW              = 0x24,
     LW_SLOT_IO_INL              = 0x25,
     LW_SLOT_IO_KBD_PROBE        = 0x26,
+    LW_SLOT_IO_KBD_ENABLE       = 0x27,
 
     LW_SLOT_COUNT
 };
@@ -73,6 +77,18 @@ extern PVOID *lw_abi_base;
 #define lw_put_qword    LW_CALL(LW_SLOT_CONSOLE_PUT_QWORD, void (*)(QWORD))
 #define lw_screen_clear LW_CALL(LW_SLOT_CONSOLE_CLEAR,     void (*)(void))
 #define lw_dump128      LW_CALL(LW_SLOT_CONSOLE_DUMP128,   void (*)(PVOID))
+#define lw_getk         LW_CALL(LW_SLOT_CONSOLE_GETK,      int (*)(void))
+#define lw_getc         LW_CALL(LW_SLOT_CONSOLE_GETC,      char (*)(void))
+#define lw_getp         LW_CALL(LW_SLOT_CONSOLE_GETP,      int (*)(void))
+
+#define lw_outb         LW_CALL(LW_SLOT_IO_OUTB,           void (*)(WORD, BYTE))
+#define lw_outw         LW_CALL(LW_SLOT_IO_OUTW,           void (*)(WORD, WORD))
+#define lw_outl         LW_CALL(LW_SLOT_IO_OUTL,           void (*)(WORD, DWORD))
+#define lw_inb          LW_CALL(LW_SLOT_IO_INB,            BYTE (*)(WORD))
+#define lw_inw          LW_CALL(LW_SLOT_IO_INW,            WORD (*)(WORD))
+#define lw_inl          LW_CALL(LW_SLOT_IO_INL,            DWORD (*)(WORD))
+#define lw_kbd_probe    LW_CALL(LW_SLOT_IO_KBD_PROBE,      void (*)(void))
+#define lw_kbd_enable   LW_CALL(LW_SLOT_IO_KBD_ENABLE,     void (*)(void))
 
 // check LWAB
 static inline int lw_abi_attach(PVOID base) {

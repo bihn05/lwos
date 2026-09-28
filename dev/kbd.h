@@ -7,7 +7,7 @@ void kbd_probe();
 int kbd_enable();
 
 enum {
-    N_NONE = -1,
+    K_NONE = -1,
     K_UP = 0x100,
     K_DOWN,
     K_LEFT,
@@ -53,6 +53,10 @@ enum {
     KM_ALT = KM_LALT | KM_RALT
 };
 
-void kbd_reset();
+void kbd_reset_state();
+
+int kbd_feed(BYTE sc);
+int kbd_poll();
+BYTE kbd_mods();
 
 #endif

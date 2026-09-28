@@ -1,6 +1,7 @@
 #include "stdint.h"
 #include "text.h"
 #include "io.h"
+#include "kbd.h"
 
 WORD curx = 0, cury = 0;
 PWORD video = (PWORD)0xB8000;
@@ -158,5 +159,53 @@ void dump128(PVOID src) {
         }
         puts("\n\r");
         addr += 16;
+    }
+}
+
+static const char *key_seq(int k)
+{
+	switch (k) {
+	case K_UP:    return "\033[A";
+	case K_DOWN:  return "\033[B";
+	case K_RIGHT: return "\033[C";
+	case K_LEFT:  return "\033[D";
+	case K_HOME:  return "\033[H";
+	case K_END:   return "\033[F";
+	case K_PGUP:  return "\033[5~";
+	case K_PGDN:  return "\033[6~";
+	case K_INS:   return "\033[2~";
+	case K_DEL:   return "\033[3~";
+	}
+	return 0;
+}
+
+static const char *pend;
+
+int getk() {
+    for (;;) {
+        int k;
+        k = kbd_poll();
+        if (k != K_NONE)return k;
+    }
+}
+
+char getc() {
+    for (;;) {
+        int k;
+
+        if (pend && *pend) {
+            char c = *pend++;
+            return c;
+        }
+        pend = 0;
+
+        k = getk();
+        if (k < 0x80)return (char)k;
+
+        const char *s = key_seq(k);
+        if (s) {
+            pend = s+1;
+            return s[0];
+        }
     }
 }

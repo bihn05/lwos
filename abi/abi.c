@@ -8,6 +8,7 @@
 #include "stdint.h"
 #include "text.h"
 #include "io.h"
+#include "kbd.h"
 
 extern char __bss_start[], __bss_end[];
 
@@ -29,8 +30,18 @@ const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(
     [LW_SLOT_CONSOLE_PUT_QWORD] = (PVOID)put_qword,
     [LW_SLOT_CONSOLE_CLEAR]     = (PVOID)screen_clear,
     [LW_SLOT_CONSOLE_DUMP128]   = (PVOID)dump128,
+    [LW_SLOT_CONSOLE_GETK]      = (PVOID)getk,
+    [LW_SLOT_CONSOLE_GETC]      = (PVOID)getc,
+    [LW_SLOT_CONSOLE_GETP]      = (PVOID)kbd_poll,
 
     [LW_SLOT_IO_OUTB]           = (PVOID)outb,
+    [LW_SLOT_IO_OUTW]           = (PVOID)outw,
+    [LW_SLOT_IO_OUTL]           = (PVOID)outl,
+    [LW_SLOT_IO_INB]           = (PVOID)inb,
+    [LW_SLOT_IO_INW]           = (PVOID)inw,
+    [LW_SLOT_IO_INL]           = (PVOID)inl,
+    [LW_SLOT_IO_KBD_PROBE]      = (PVOID)kbd_probe,
+    [LW_SLOT_IO_KBD_ENABLE]     = (PVOID)kbd_enable
 };
 
 /* 自己清自己的 bss, 调用方不需要知道 ABI.BIN 的内存布局 */

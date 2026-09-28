@@ -22,33 +22,33 @@ static struct {
 } __attribute__((packed)) idtr;
 
 static const char* const names[] = {
-    "#DE divide error",
-    "#DB debug",
-    "NMI",
-    "#BP breakpoint",
+    "#DE divide error\0",
+    "#DB debug\0",
+    "NMI\0",
+    "#BP breakpoint\0",
 
-    "#OF overflow",
-    "#BR bound range",
-    "#UD invalid opcode"
-    "#NM device n/a",
+    "#OF overflow\0",
+    "#BR bound range\0",
+    "#UD invalid opcode\0"
+    "#NM device n/a\0",
 
-    "#DF double fault",
-    "coproc seg overflow",
-    "#TS invalid TSS",
-    "#NP segment n/p",
+    "#DF double fault\0",
+    "coproc seg overflow\0",
+    "#TS invalid TSS\0",
+    "#NP segment n/p\0",
 
-    "#SS stack fault",
-    "#GP general prot",
-    "#PF page fault",
-    "reserved",
+    "#SS stack fault\0",
+    "#GP general prot\0",
+    "#PF page fault\0",
+    "reserved\0",
 
-    "#MF fpu error",
-    "#AC align check",
-    "#MC machine check",
-    "#XM SIMD ERROR",
+    "#MF fpu error\0",
+    "#AC align check\0",
+    "#MC machine check\0",
+    "#XM SIMD ERROR\0",
 
-    "#VE virt exception",
-    "#CP ctrl protection"
+    "#VE virt exception\0",
+    "#CP ctrl protection\0"
 };
 
 const char* vec_name(DWORD v) {
@@ -80,7 +80,7 @@ void idt_init(void) {
 
 void dbg_panic(struct ctx *c)
 {
-	lw_puts("\r\n\r\n*** UNRECOVERABLE FAULT ***\n");
+	lw_puts("\r\n\r\n*** UNRECOVERABLE FAULT ***\n\r");
 	lw_puts("VECTOR "); lw_put_dword(c->vector);
 	lw_puts(" ");       lw_puts((char*)vec_name(c->vector));
 	lw_puts("  ERRCODE "); lw_put_dword(c->errcode);
