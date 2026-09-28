@@ -1,0 +1,38 @@
+chapter: 20-build-system
+status: ACCEPTED
+severity: n/a (no blocking defects found)
+
+verification performed:
+  `make clean && make all` run end-to-end on current makefile.
+  Full chain succeeded (exit 0): mbr.bin -> stage2.elf/.bin -> loader.elf/.bin
+  -> monitor.elf/.bin -> fsroot -> mkfat -> lwcnc.img. mkfat reported
+  3 files packed, no errors.
+
+fixed since previous review:
+  makefile:124 `clean` target no longer references the nonexistent
+  `loader/*.o` (previously a dead glob left over from copying v1's clean
+  rule; v2 never had a loader/ directory, loader objects live under boot/).
+
+note: most of SPEC/20's Purpose/Public-interface sections describe v1's
+  design (single-ELF-two-binaries + objcopy split, `map`/`pgm` targets,
+  kernel shipped as a file named `debug`, mkfat.py) which v2 has not built
+  yet and is not expected to match at this stage -- not treated as a defect
+  per the "SPEC describes v1, not a v2 target" understanding.
+
+non-blocking cleanup items (cosmetic, no functional impact, not required
+for acceptance -- listed for whenever the makefile gets another pass):
+  - CFLAGS (makefile:10) still carries `-Ikernel`. v2 has no kernel/
+    directory (monitor/ is the equivalent); gcc silently ignores a
+    missing -I path, so this is inert, just stale from the v1 makefile.
+  - `KERNEL = kernel.exe` (makefile:23) and `DEVICE = /dev/sda` (makefile:35)
+    are both unreferenced by any target in v2's makefile (v1's `pgm` target
+    used DEVICE; v2 has no `pgm` target). Dead variables, safe to drop
+    whenever this file gets tidied.
+  - Asymmetric linker warning suppression: monitor's ld invocation passes
+    `--no-warn-rwx-segments` (makefile:75) but loader's does not
+    (makefile:52), so `make all` prints
+    "ld: warning: bin/loader.elf has a LOAD segment with RWX permissions"
+    for the loader link only. Harmless (doesn't fail the build), just an
+    unexplained inconsistency between the two link steps worth deciding
+    one way or the other (suppress both, or fix both binaries' segment
+    permissions instead of suppressing).

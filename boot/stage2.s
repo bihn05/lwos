@@ -709,7 +709,6 @@ pm_entry:
     mov ss, ax
     mov fs, ax
     mov gs, ax
-
     mov esp, 0xa0000
 
     jmp 0x10000

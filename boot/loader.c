@@ -11,7 +11,11 @@ typedef unsigned int* uint32_p;
 typedef unsigned long* uint64_p;
 typedef void* uint0_p;
 
+#include "abi.h"
+
 #define NULL (0)
+
+uint0_p *lw_abi_base = NULL;
 
 unsigned int curx = 0, cury = 0;
 
@@ -55,6 +59,20 @@ void update_cursor() {
     outb(0x3D5, pos & 0xff);
 }
 
+// 硬件光标是唯一可信的位置, ABI.BIN 等外部代码也会移动它
+void get_cursor() {
+    unsigned int pos;
+    outb(0x3D4, 0x0E);
+    pos = inb(0x3D5) << 8;
+    outb(0x3D4, 0x0F);
+    pos |= inb(0x3D5);
+
+    if (pos >= 80 * 25) pos = 0;
+
+    curx = pos % 80;
+    cury = pos / 80;
+}
+
 void screen_scroll() {
     for (int i = 0; i < 80 * 24; i++) {
         video[i] = video[i + 80];
@@ -74,6 +92,7 @@ void screen_clear() {
 }
 
 void putc(char c) {
+    get_cursor();
     switch (c) {
         case 0x8: {
             if (curx >= 1)curx--;
@@ -283,9 +302,9 @@ int fat_init() {
 
     for (int i = 0; i < 4; i++) {
         if (mbrpte[i].flag == 0x80) {
-            putc('p');
+            putc('P');
             putc(_hex[i]);
-            puts(" active, ");
+            puts(" ACTIVE; ");
 
             if (mbrpte[i].series == 0x0c) {
                 puts("FAT32, ");
@@ -394,12 +413,9 @@ void search_file(const char* name, uint32_p cluster, uint32_p size) {
 }
 
 uint32_t next_cluster(uint32_t cluster) {
-    uint32_t hi_c = cluster * 4 / 512;
-    uint32_t lo_c = cluster * 4 % 512;
+    ata_read(mbrpte[part_entry].lba+reserved_sector+cluster/128, 1, (uint16_p)fat_buf);
 
-    ata_read(mbrpte[part_entry].lba+reserved_sector+hi_c, 1, (uint16_p)fat_buf);
-
-    uint32_t res = (*(uint32_p)fat_buf + lo_c/4) & 0x0fffffff;
+    uint32_t res = ((uint32_p)fat_buf)[cluster%128] & 0x0fffffff;
 
     put_dword(cluster);
     puts("->");
@@ -447,13 +463,45 @@ int line_reading(const char *str, char* out) {
     return count;
 }
 
-#define LW_ABI_MAGIC 0x4241574cu
-/*
-command: 0h load
-         1h run
-         2h dmp
-        ffh quit
-*/
+static const char *const head_names[] = {
+    "MAGIC    ",
+    "ENTRY    ",
+    "BSS START",
+    "BSS END  ",
+    "STACK TOP"
+};
+
+static int head_check(uint32_p h) {
+    puts("IMAGE HEAD AT ");
+    put_dword((uint32_t)h);
+    puts("\n\r");
+
+    for (int i = LW_SLOT_MAGIC; i <= LW_SLOT_STACK_TOP; i++) {
+        puts(" ");
+        puts((char*)head_names[i]);
+        puts(" ");
+        put_dword(h[i]);
+        puts("\n\r");
+    }
+
+    if (h[LW_SLOT_MAGIC] != LW_ABI_MAGIC) {
+        puts("BAD MAGIC\n\r");
+        return -1;
+    }
+
+    // entry shouldnot be 0 or inside bss
+    if (h[LW_SLOT_ENTRY] <= (uint32_t)h ||
+        h[LW_SLOT_ENTRY] >= h[LW_SLOT_BSS_START]) {
+        puts("BAD ENTRY\n\r");
+        return -1;
+    }
+    if (h[LW_SLOT_BSS_END] < h[LW_SLOT_BSS_START]) {
+        puts("BAD BSS\n\r");
+        return -1;
+    }
+    return 0;
+}
+
 uint32_t execute(const char* str) {
     char buf[20];
     char filename[12];
@@ -468,14 +516,39 @@ uint32_t execute(const char* str) {
     memcpy(filename, buf+9, 11);
     memcpy(addr_str, buf+1, 8);
 
-    puts(filename);
-
     uint32_t address = par_dword(addr_str);
 
     uint32_t cluster = 0;
     uint32_t size = 0;
 
     switch (str[0]) {
+        case 'A':case 'a': {
+            // attach ABI
+            uint32_p h = (uint32_p)address;
+            if (head_check(h) != 0)break;
+            if (h[LW_SLOT_STACK_TOP] != 0) {
+                puts("NOT LIB, USE [P]\n\r");
+                break;
+            }
+
+            // zero the bss
+            memzero((uint8_p)h[LW_SLOT_BSS_START],
+                    h[LW_SLOT_BSS_END] - h[LW_SLOT_BSS_START]);
+            
+            int r = ((int (*)(void))h[LW_SLOT_ENTRY])();
+
+            if (r != 0) {
+                puts("INIT FAILED ");
+                put_dword(r);
+                puts("\n\r");
+                break;
+            }
+
+            lw_abi_base = (void**)h;
+            puts("ABI ATTACHED\n\r");
+
+            break;
+        }
         case 'D':case 'd': {
             dump128((uint0_p)address);
             break;
@@ -494,19 +567,77 @@ uint32_t execute(const char* str) {
             puts(" BYTES\n\r");
             break;
         }
+        case 'C':case 'c': {
+            ata_read(mbrpte[part_entry].lba+reserved_sector+address/128, 1, (uint16_p)fat_buf);
+
+            for (int i = 0; i < 16; i++) {
+                for (int j = 0; j < 8; j++) {
+                    put_dword(((uint32_p)fat_buf)[i*8+j]);
+                    putc(' ');
+                }
+                puts("\n\r");
+            }
+            break;
+        }
+        case 'P':case 'p': {
+            // port image
+            // check, zero bss
+            // change stack
+            // set entry
+            // never return
+            uint32_p h = (uint32_p)address;
+            if (head_check(h) != 0)break;
+
+            if (h[LW_SLOT_STACK_TOP] == 0) {
+                puts("NOT PROGRAM, USE [A]\n\r");
+                break;
+            }
+
+            if (lw_abi_base == NULL) {
+                puts("NO ABI ATTACHED\n\r");
+            }
+
+            memzero((uint8_p)h[LW_SLOT_BSS_START], h[LW_SLOT_BSS_END]-h[LW_SLOT_BSS_START]);
+
+            puts("JUMP\n\r");
+            asm volatile (
+                "mov  %0, %%esp\n\t"
+                "xor  %%ebp, %%ebp\n\t"
+                "push %2\n\t"
+                "call *%1\n\t"
+                "1: cli\n\t"
+                "hlt\n\t"
+                "jmp 1b\n\t"
+                :
+                : "r"(h[LW_SLOT_STACK_TOP]), "r"(h[LW_SLOT_ENTRY]), "r"(lw_abi_base)
+                : "memory"
+            );
+
+            __builtin_unreachable();
+        }
         case 'Q':case 'q': {
             return 1;
             break;
         }
         case 'R':case 'r': {
-            void (*target)(void) = *(void(**)(void))address;
-            __asm__ volatile ("jmp *%0" :: "r"(target));
+            // call address unsafely
+            // return if 
+            // really a ret there
+
+            puts("TRY RUN AT ");
+            put_dword(address);
+            puts("\n\r");
+
+            uint0_p target = (uint0_p)address;
+            asm volatile (
+                "call *%0"
+                :
+                : "r" (target)
+                : "memory"
+            );
+
+            puts("RETURNED\n\r");
             break;
-        }
-        case 'T':case 't': {
-            if (*(uint32_p)address != LW_ABI_MAGIC) {
-                puts("INVALID SUBSYSTEM");
-            }
         }
         default: {
             break;
@@ -526,13 +657,12 @@ void loader_main(void) {
     }
 
     screen_clear();
-    puts("filesystem initialize ...\n\r");
+    puts("FILESYSTEM INITIALIZE ...\n\r");
     fat_init();
 
-    puts("loading boot.ini ...\n\r");
+    puts("LOADING BOOT.INI ...\n\r");
     search_file("BOOT    INI", &bootini_c, &lr_size);
     load_cluster_to_memory((uint0_p)0x500, bootini_c);
-    dump128((uint0_p)0x500);
 
     do {
         line_reading((const char*)0x500, line_buf);

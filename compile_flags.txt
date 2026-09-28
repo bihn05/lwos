@@ -1,0 +1,5 @@
+-m32
+-ffreestanding
+-std=gnu11
+-Icommon
+-Idev

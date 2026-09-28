@@ -1,0 +1,52 @@
+chapter: 21-abi-table
+status: NOT ACCEPTED
+severity: structural (silent-drift risk), not a build/runtime crash today
+
+finding:
+  boot/loader.c has zero #include directives (confirmed: `grep -n "#include" boot/loader.c` returns nothing).
+  It hand-rolls its own copy of the ABI magic constant instead of sharing monitor/abi.h:
+
+    boot/loader.c:450   #define LW_ABI_MAGIC 0x4241574cu
+    monitor/abi.h:4      #define LW_ABI_MAGIC 0x4241574cu
+
+  and reads slots by hardcoded numeric index instead of the LW_SLOT_* enum:
+
+    boot/loader.c:505-525
+        slots_beg[0]   // should be slots_beg[LW_SLOT_MAGIC]
+        slots_beg[1]   // should be slots_beg[LW_SLOT_MONITOR]
+        slots_beg[2]   // should be slots_beg[LW_SLOT_BSS_START]
+        slots_beg[3]   // should be slots_beg[LW_SLOT_BSS_END]
+        slots_beg[4]   // should be slots_beg[LW_SLOT_STACK_TOP]
+
+why this fails chapter 21's own stated rule:
+  SPEC/21-abi-table.md calls out, as the load-bearing design of the whole
+  file: "THE ONE RULE: slots are append-only. Never renumber, never reuse,
+  never remove" (abi.h) -- and separately flags, as an existing v1 smell,
+  that abi.c's slot table and abi_names[] are "two independently-maintained
+  arrays ... nothing enforces they describe the same slot with the same
+  intent beyond both being indexed by the same enum."
+
+  v2 currently has that same failure mode one level worse: producer
+  (monitor/abi.h/abi.c) and consumer (boot/loader.c) are not even indexed
+  by the same enum -- loader.c doesn't see the enum at all, it has its own
+  literal magic number and literal slot indices. A reorder or insertion in
+  monitor/abi.h's enum (already happened once this session: console slots
+  0x10-0x16 were added) changes nothing in loader.c, compiles clean, and
+  would silently read the wrong slot at runtime. No compiler or linker
+  diagnostic would catch it.
+
+suggested fix:
+  - Give boot/loader.c a build path to #include "../monitor/abi.h" (or hoist
+    abi.h to a shared location both boot/ and monitor/ can -I into), and
+    replace the local LW_ABI_MAGIC define + slots_beg[0..4] literals with
+    LW_SLOT_MAGIC / LW_SLOT_MONITOR / LW_SLOT_BSS_START / LW_SLOT_BSS_END /
+    LW_SLOT_STACK_TOP.
+  - This is the same kind of fix chapter 21 already recommends generalizing
+    for abi_names[] vs lw_abi[] (single source of truth, ideally checked at
+    compile time) -- worth doing once for both call sites rather than twice.
+
+not blocking today because:
+  loader.c currently only touches slots 0-4, which happen to still match
+  numerically between the two copies, so nothing is broken yet. This is a
+  "will drift silently" finding, not a "currently produces wrong output"
+  finding.
