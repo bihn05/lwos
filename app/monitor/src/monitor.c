@@ -16,13 +16,13 @@ static void no_abi_halt(void) {
     }
 }
 
-static int fb_w, fb_h;
+static int fb_w, fb_h, fb_pitch;
 static PDWORD framebuffer;
 static char line[128];
 
 void putpixel(int x, int y, DWORD color) {
-    if((x>fb_w)||(x<0)||(y>fb_h)||(y<0))return;
-    framebuffer[x+y*fb_w]=color&0xffffff;
+    if((x>=fb_w)||(x<0)||(y>=fb_h)||(y<0))return;
+    framebuffer[x+y*fb_pitch]=color&0xffffff;
 }
 
 static void prompt_read() {
@@ -101,12 +101,7 @@ static void execute(const char* str) {
 
     switch (c0) {
         case 'h': {
-            switch (c1) {
-                case '1': {
-                    lw_puts("h1\n\r");
-                    break;
-                }
-            }
+            lw_puts("d [ADDR]\n\r");
             break;
         }
         case 'd': {
@@ -115,6 +110,9 @@ static void execute(const char* str) {
             }
             lw_dump128((PVOID)a);
             break;
+        }
+        case 'p': {
+
         }
         case 'v': {
             int rc;
@@ -130,7 +128,9 @@ static void execute(const char* str) {
                 lw_put_word((DWORD)lw_get_fb_h());
                 lw_puts(" ");
                 lw_put_byte((DWORD)lw_get_fb_bpp());
-                lw_puts("BIT\n\r");
+                lw_puts("BIT PITCH=");
+                lw_put_dword((DWORD)lw_get_fb_pitch()/4);
+                lw_puts("*DWORD\n\r");
             } else if (c1=='e') {
                 rc=lw_gfx_enter();
                 if (rc) {
@@ -157,14 +157,7 @@ static void execute(const char* str) {
                 putpixel(fb_w/2, i, 0xffffff);
             }
             
-            for (int sx=0;sx<fb_w;sx++) {
-                for (int k=0;k<50;k++) {
-                    int x=((sx-fb_w/2)*50+k)/10;
-                    int y=x*x*x - 50*x;
-                    int sy=fb_h/2-y/100;
-                    putpixel(sx, sy, 0x00ff00);
-                }
-            }
+            draw_curve();
 
             break;
         }
@@ -182,9 +175,11 @@ void monitor_main(void) {
     idt_init();
     lw_kbd_probe();
     lw_kbd_enable();
+    lw_fpu_init();
 
     fb_h = lw_get_fb_h();
     fb_w = lw_get_fb_w();
+    fb_pitch = lw_get_fb_pitch()/4;
     framebuffer = (PDWORD)lw_get_fb();
 
     lw_resv_entry();

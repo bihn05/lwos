@@ -27,3 +27,14 @@ void pci_write_dword(BYTE bus, BYTE dev, BYTE func, BYTE off, DWORD value) {
     outl(PCI_CFG_ADDR, cfg_addr(bus, dev, func, off));
     outl(PCI_CFG_DATA, value);
 }
+
+int pci_present(void) {
+    DWORD saved, probe;
+
+    saved=inl(PCI_CFG_ADDR);
+    outl(PCI_CFG_ADDR, 0x80000000u);
+    probe=inl(PCI_CFG_ADDR);
+    outl(PCI_CFG_ADDR, saved);
+    if (probe != 0x80000000u)return 0;
+    return pci_read_word(0,0,0,PCI_VENDOR_ID)!=0xffff;
+}

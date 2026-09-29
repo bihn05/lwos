@@ -136,3 +136,7 @@ DWORD bi_fb_bpp(void) {
     DWORD t=BINFO_PTR->fb_bpp;
     return t;
 }
+DWORD bi_fb_pitch(void) {
+    DWORD t=BINFO_PTR->fb_pitch;
+    return t;
+}

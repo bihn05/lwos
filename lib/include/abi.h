@@ -56,11 +56,17 @@ enum {
     LW_SLOT_IO_VIDEO_ENTER      = 0x28,
     LW_SLOT_IO_VIDEO_EXIT       = 0x29,
     LW_SLOT_IO_VIDEO_LIVE       = 0x2a,
+    LW_SLOT_IO_FPU_INIT         = 0x2b,
 
     LW_SLOT_INFO_FB             = 0x30,
     LW_SLOT_INFO_FB_W           = 0x31,
     LW_SLOT_INFO_FB_H           = 0x32,
     LW_SLOT_INFO_FB_BPP         = 0x33,
+    LW_SLOT_INFO_FB_PITCH       = 0x34,
+
+    LW_SLOT_PCI_PRESENT         = 0x40,
+    LW_SLOT_PCI_READ_DWORD      = 0x41,
+    LW_SLOT_PCI_WRITE_DWORD     = 0x42,
 
     LW_SLOT_RESV_ENTRY          = 0x7f,
 
@@ -102,11 +108,17 @@ extern PVOID *lw_abi_base;
 #define lw_gfx_enter    LW_CALL(LW_SLOT_IO_VIDEO_ENTER,    int (*)(void))
 #define lw_gfx_exit     LW_CALL(LW_SLOT_IO_VIDEO_EXIT,     void (*)(void))
 #define lw_gfx_is_live  LW_CALL(LW_SLOT_IO_VIDEO_LIVE,     int (*)(void))
+#define lw_fpu_init     LW_CALL(LW_SLOT_IO_FPU_INIT,       void (*)(void))
 
 #define lw_get_fb       LW_CALL(LW_SLOT_INFO_FB,           DWORD (*)(void))
 #define lw_get_fb_w     LW_CALL(LW_SLOT_INFO_FB_W,         DWORD (*)(void))
 #define lw_get_fb_h     LW_CALL(LW_SLOT_INFO_FB_H,         DWORD (*)(void))
 #define lw_get_fb_bpp   LW_CALL(LW_SLOT_INFO_FB_BPP,       DWORD (*)(void))
+#define lw_get_fb_pitch LW_CALL(LW_SLOT_INFO_FB_PITCH,     DWORD (*)(void))
+
+#define lw_pci_present  LW_CALL(LW_SLOT_PCI_PRESENT,       int (*)(void))
+#define lw_pci_read     LW_CALL(LW_SLOT_PCI_READ_DWORD,    DWORD (*)(BYTE, BYTE, BYTE, BYTE))
+#define lw_pci_write    LW_CALL(LW_SLOT_PCI_WRITE_DWORD,   void (*)(BYTE, BYTE, BYTE, BYTE, DWORD))
 
 #define lw_resv_entry   LW_CALL(LW_SLOT_RESV_ENTRY,        void (*)(void))
 // check LWAB

@@ -28,7 +28,7 @@ static const char* const names[] = {
 
     "#OF overflow\0",
     "#BR bound range\0",
-    "#UD invalid opcode\0"
+    "#UD invalid opcode\0",
     "#NM device n/a\0",
 
     "#DF double fault\0",

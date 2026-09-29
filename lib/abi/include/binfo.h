@@ -66,6 +66,7 @@ DWORD bi_fb(void);
 DWORD bi_fb_w(void);
 DWORD bi_fb_h(void);
 DWORD bi_fb_bpp(void);
+DWORD bi_fb_pitch(void);
 #endif
 
 #endif

@@ -12,6 +12,8 @@
 #include "ata.h"
 #include "binfo.h"
 #include "tramp.h"
+#include "fpu.h"
+#include "pci.h"
 
 extern char __bss_start[], __bss_end[];
 
@@ -48,11 +50,17 @@ const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(
     [LW_SLOT_IO_VIDEO_ENTER]    = (PVOID)gfx_enter,
     [LW_SLOT_IO_VIDEO_EXIT]     = (PVOID)gfx_exit,
     [LW_SLOT_IO_VIDEO_LIVE]     = (PVOID)gfx_live,
+    [LW_SLOT_IO_FPU_INIT]       = (PVOID)fpu_init,
 
     [LW_SLOT_INFO_FB]           = (PVOID)bi_fb,
     [LW_SLOT_INFO_FB_W]         = (PVOID)bi_fb_w,
     [LW_SLOT_INFO_FB_H]         = (PVOID)bi_fb_h,
     [LW_SLOT_INFO_FB_BPP]       = (PVOID)bi_fb_bpp,
+    [LW_SLOT_INFO_FB_PITCH]     = (PVOID)bi_fb_pitch,
+
+    [LW_SLOT_PCI_PRESENT]       = (PVOID)pci_present,
+    [LW_SLOT_PCI_READ_DWORD]    = (PVOID)pci_read_dword,
+    [LW_SLOT_PCI_WRITE_DWORD]   = (PVOID)pci_write_dword,
 
     [LW_SLOT_RESV_ENTRY]        = (PVOID)binfo_dump
 };
