@@ -22,7 +22,12 @@
 - 关于设计、内存布局的存档
 
 ## 仓库结构
-    boot/   MBR和早期引导代码
+    boot/     MBR + STAGE2（实模式，磁盘保留扇区）
+    loader/   LOADER.BIN 与 BOOT.INI
+    lib/      库；lib/include 为公开头文件（abi.h 等）
+      abi/    ABI.BIN，src/ 与 include/（私有头）分开
+    app/      运行在 ABI 之上的程序（monitor、test1），各自 src/ 与 include/ 分开
+    build/    中间产物（.o/.d），bin/ 为成品
     fsroot/ 用于构建FAT32的暂用目录
     tools/  宿主机侧实用工具
     report/ 评审笔记（review）

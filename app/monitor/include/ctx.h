@@ -1,6 +1,5 @@
 #ifndef _LW_CTX_H
 #define _LW_CTX_H
-#include "io.h"
 #include "stdint.h"
 
 struct ctx {

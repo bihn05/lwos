@@ -1,5 +1,6 @@
 -m32
 -ffreestanding
 -std=gnu11
--Icommon
--Idev
+-Ilib/include
+-Ilib/abi/include
+-Iapp/monitor/include

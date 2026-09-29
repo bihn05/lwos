@@ -1,6 +1,5 @@
 #include "ctx.h"
 #include "abi.h"
-#include "io.h"
 #include "stdint.h"
 
 #define NVEC        48
