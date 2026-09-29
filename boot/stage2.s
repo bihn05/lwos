@@ -367,7 +367,7 @@ vbs_harvest:
     mov ax, [MIB+0x12]
     cmp ax, 1920
     ja .next
-    mov bx, [MIB+014]
+    mov bx, [MIB+0x14]
     cmp bx, 1200
     ja .next
 
@@ -692,14 +692,41 @@ gdt_data:
     dq 0x00cf92000000ffff
     ; base=0 limit=0xfffff g=1
     ; d/b=1 p=1 dpl=0 data r/w
+gdt_code16:
+	dq 0x00009a000000ffff
+gdt_data16:
+	dq 0x000092000000ffff
 gdt_end:
 
 gdt_desc:
     dw gdt_end - gdt_start - 1
     dd gdt_start
 
+idt_real:
+	dw 0x3FF
+	dd 0
+
 CODE_SEL        equ gdt_code - gdt_start
 DATA_SEL        equ gdt_data - gdt_start
+
+TRAMP_BLK       equ 0xA000
+TB_ESP          equ TRAMP_BLK + 0x00    ; dword, 32-bit esp across the trip
+TB_PIC          equ TRAMP_BLK + 0x04    ; 2 bytes, master then slave IRQ mask
+TB_GDTR         equ TRAMP_BLK + 0x08    ; 6 bytes, sgdt
+TB_IDTR         equ TRAMP_BLK + 0x10    ; 6 bytes, sidt
+; Register block: caller fills it, the ROM's answers come back in it.
+TRAMP_REGS      equ TRAMP_BLK + 0x18
+TB_AX           equ TRAMP_REGS + 0x00
+TB_BX           equ TRAMP_REGS + 0x02
+TB_CX           equ TRAMP_REGS + 0x04
+TB_DX           equ TRAMP_REGS + 0x06
+TB_ES           equ TRAMP_REGS + 0x08
+TB_DI           equ TRAMP_REGS + 0x0A
+TB_BP           equ TRAMP_REGS + 0x0C
+TB_FLAGS        equ TRAMP_REGS + 0x0E
+TB_VEC          equ TRAMP_BLK + 0x28    ; dword, &tramp_int10 for ABI.BIN to call
+
+TRAMP_STACK_TOP equ 0xc000
 
 [bits 32]
 pm_entry:
@@ -711,4 +738,120 @@ pm_entry:
     mov gs, ax
     mov esp, 0xa0000
 
+    mov dword [TB_VEC], tramp_int10
+
     jmp 0x10000
+
+[bits 32]
+global tramp_int10
+tramp_int10:
+    pushfd
+    pushad
+    cli
+
+    sgdt [TB_GDTR]
+    sidt [TB_IDTR]
+
+    in al, 0x21
+    mov [TB_PIC], al
+    in al, 0xa1
+    mov [TB_PIC+1], al
+    mov al, 0xff
+    out 0x21, al
+    out 0xa1, al
+
+    mov [TB_ESP], esp
+    jmp CODE16_SEL:.step16
+[bits 16]
+.step16:
+    mov ax, DATA16_SEL
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    lidt [idt_real]
+
+    mov eax, cr0
+    and eax, 0xfffffffe
+    mov cr0, eax
+
+    db 0xea
+    dw .rm_go
+    dw 0
+.rm_go:
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov sp, TRAMP_STACK_TOP
+
+    mov ax, [TB_ES]
+    push ax
+    mov ax, [TB_AX]
+    mov cx, [TB_CX]
+    mov dx, [TB_DX]
+    mov bx, [TB_BX]
+    mov di, [TB_DI]
+    mov bp, [TB_BP]
+    pop es
+
+    int 0x10
+
+    mov [cs:TB_AX], ax
+    mov [cs:TB_CX], cx
+    mov [cs:TB_DX], dx
+    mov [cs:TB_BX], bx
+    mov [cs:TB_DI], di
+    mov [cs:TB_BP], bp
+    pushf
+    pop ax
+    mov [cs:TB_FLAGS], ax
+    mov ax, es
+    mov [cs:TB_ES], ax
+
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+
+    call a20_test
+    jc .a20ok
+    call a20_enable
+.a20ok:
+    lgdt [gdt_desc]
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+    db 0x66
+    db 0xea
+    dd .pm_back
+    dw CODE_SEL
+
+[bits 32]
+.pm_back:
+    mov ax, DATA_SEL
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	mov esp, [TB_ESP]
+
+    lgdt [TB_GDTR]
+    lidt [TB_IDTR]
+
+    mov al, [TB_PIC]
+    out 0x21, al
+    mov al, [TB_PIC+1]
+    out 0xa1, al
+
+    popad
+    popfd
+    ret
+
+CODE16_SEL equ gdt_code16 - gdt_start
+DATA16_SEL equ gdt_data16 - gdt_start

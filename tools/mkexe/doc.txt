@@ -1,0 +1,15 @@
+   +0h:    4B  magic 'LWP'
+   +4h:  WORD  version
+   +6h:  WORD  header size
+   +8h: DWORD  flags
+   +ch: DWORD  abi version
+  +10h: DWORD  entry (entry - base)
+  +14h: DWORD  image offset (base - filebeg)
+  +18h: DWORD  image size
+  +1ch: DWORD  memory size (file size)
+  +20h: DWORD  stack size (image + bss)
+  +24h: DWORD  relocation offset
+               
+  +28h: DWORD  relocation count
+  +2ch: DWORD  symbol offset
+  +30h: DWORD  symbol count

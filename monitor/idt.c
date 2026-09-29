@@ -74,8 +74,8 @@ void idt_init(void) {
 	__asm__ volatile ("lidt %0" :: "m"(idtr));
 
     // masked everything
-    outb(0x21, 0xFF);
-	outb(0xA1, 0xFF);
+    lw_outb(0x21, 0xff);
+    lw_outb(0xa1, 0xff);
 }
 
 void dbg_panic(struct ctx *c)

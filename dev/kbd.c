@@ -158,7 +158,7 @@ int kbd_enable() {
         puts("COULD NOT REREAD CONFIG\n\r");
         return 0;
     }
-
+/*
     if (c&0x10) {
         c&=(BYTE)~0x10;
         c|=0x40;
@@ -170,12 +170,23 @@ int kbd_enable() {
             puts("FAILED VERIFY CONDIG\n\r");
             return 0;
         }
+    }*/
+
+    c&=(BYTE)~0x10;
+    c|=0x40;
+
+    if (!write_config(c)) {
+        puts("FAILED WRITE CONFIG\n\r");
+        return 0;
+    }
+    if (!read_config(&c)) {
+        puts("FAILED VERIFY CONFIG\n\r");
+        return 0;
     }
 
     puts("CONFIG AFTER  ");
     put_byte(c);
     puts("H\n\r");
-
     if (c&0x10) {
         puts("BIT4 UNRELIABLE, CTN ANYWAY\n\r");
     }
@@ -364,8 +375,13 @@ int kbd_feed(BYTE sc) {
 
 int kbd_poll() {
     BYTE s = inb(KBD_STAT);
+    BYTE d;
 
-    if ((s&(ST_OBF|ST_AUXB))!=ST_OBF)
+    if ((s&(ST_OBF|ST_AUXB))!=ST_OBF) {
         return K_NONE;
-    return kbd_feed(inb(KBD_DATA));
+    } else {
+        d = inb(KBD_DATA);
+        //put_byte(d);
+        return kbd_feed(d);
+    }
 }

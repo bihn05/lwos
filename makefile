@@ -66,7 +66,10 @@ dev/%.o: dev/%.c $(wildcard dev/*.h) $(COMMON_HDRS)
 ABI_OBJS = 	abi/abi.o \
 			dev/text.o \
 			dev/io.o \
-			dev/kbd.o
+			dev/kbd.o \
+			dev/ata.o \
+			dev/binfo.o \
+			dev/tramp.o
 
 abi/%.o: abi/%.c $(wildcard dev/*.h) $(COMMON_HDRS)
 	$(TOOL_C) $(CFLAGS) -c $< -o $@
@@ -83,8 +86,7 @@ $(ABI_BIN): $(ABI_ELF)
 MONITOR_OBJS = 	monitor/head.o \
 				monitor/monitor.o \
 				monitor/isr.o \
-				monitor/idt.o \
-				dev/io.o
+				monitor/idt.o 
 
 monitor/isr.o: monitor/isr.s
 	$(TOOL_ASM) $(ASFLAGS) $< -o $@
