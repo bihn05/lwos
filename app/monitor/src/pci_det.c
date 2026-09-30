@@ -292,7 +292,7 @@ int pci_find_class(BYTE cls, BYTE sub, PBYTE bus, PBYTE dev, PBYTE fn) {
                 }
 
                 if ((((lw_pci_read((BYTE)b,d,f,8)>>24)&0xff)==cls)&&
-                (((lw_pci_read((BYTE)b,d,f,8)>>16)&0xff))) {
+                (((lw_pci_read((BYTE)b,d,f,8)>>16)&0xff)==sub)) {
                     *bus=(BYTE)b;
                     *dev=d;
                     *fn=f;

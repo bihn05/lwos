@@ -2,7 +2,7 @@
 #include "abi.h"
 #include "ctx.h"
 
-#include "eth.h"
+#include "eth_tmp.h"
 
 PVOID *lw_abi_base;
 
@@ -215,13 +215,30 @@ static void execute(const char* str) {
             break;
         }
         case 'n': {
+            BYTE tb,td,tf;
+            DWORD bar0;
             if (c1==0) {
-                if (pci_find_class(2,0,&eth_b,&eth_d,&eth_f)==0) {
+                if (pci_find_class(2,0,&tb,&td,&tf)==0) {
                     lw_puts("NO ETHERNET DEVICE FOUND\n\r");
                     return;
                 }
-                
+                set_eth_bdf(tb,td,tf);
+                bar0=lw_pci_read(tb,td,tf,0x10);
+                set_eth_bar(bar0);
+                eth_init();
                 return;
+            }
+            switch (c1) {
+                case 'r': {
+
+                    while (lw_getp()==0xffffffff) {
+                        e1k_rx_poll();
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
             break;
         }
@@ -272,19 +289,10 @@ static void execute(const char* str) {
             break;
         }
         case '.': {
-            for (int i=0;i<fb_h;i++) {
-                for (int j=0;j<fb_w;j++) {
-                    framebuffer[j+i*fb_w]=0;
-                }
+            while (1) {
+                DWORD d=lw_getp();
+                lw_put_dword(d);
             }
-
-            for (int i=0;i<fb_w;i++) {
-                putpixel(i, fb_h/2, 0xffffff);
-            }
-            for (int i=0;i<fb_h;i++) {
-                putpixel(fb_w/2, i, 0xffffff);
-            }
-
             break;
         }
     }

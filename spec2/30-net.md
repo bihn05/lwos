@@ -102,7 +102,10 @@ lwft <网卡名> run <文件>          传完立刻运行
 
 模拟器下的连接方式：
 - **QEMU**：`-netdev tap,id=n0,ifname=tap0,script=no -device e1000,netdev=n0`，宿主端对 `tap0` 收发。
-- **Bochs**：`e1000: enabled=1, mac=52:54:00:12:34:56, ethmod=tuntap, ethdev=/dev/net/tun:tap0`〔需查证：Bochs 版本和编译选项是否带 e1000 插件〕。
+- **Bochs**：本机的 Bochs（3.0.devel，自己编译装在 `/usr/local`）**没有编进网卡**，`bochs --help features` 只列出 `pci sb16`（2026-10-01 查过）。
+  要用就得重新 `./configure --enable-pci --enable-e1000 ...` 编译，然后在 bochsrc 里加
+  `e1000: enabled=1, mac=52:54:00:12:34:56, ethmod=tuntap, ethdev=/dev/net/tun:tap0`〔ethdev 的写法需查证〕。
+  注意 `ethmod` 选 `vnet` 或 `slirp` 不行：它们只转发 IP，自定义以太网类型 0x88B5 的帧到不了宿主。
 
 ## 里程碑
 

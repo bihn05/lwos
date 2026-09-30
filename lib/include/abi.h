@@ -97,7 +97,7 @@ extern PVOID *lw_abi_base;
 #define lw_dump128      LW_CALL(LW_SLOT_CONSOLE_DUMP128,   void (*)(PVOID))
 #define lw_getk         LW_CALL(LW_SLOT_CONSOLE_GETK,      int (*)(void))
 #define lw_getc         LW_CALL(LW_SLOT_CONSOLE_GETC,      char (*)(void))
-#define lw_getp         LW_CALL(LW_SLOT_CONSOLE_GETP,      int (*)(void))
+#define lw_getp         LW_CALL(LW_SLOT_CONSOLE_GETP,      DWORD (*)(void))
 
 #define lw_outb         LW_CALL(LW_SLOT_IO_OUTB,           void (*)(WORD, BYTE))
 #define lw_outw         LW_CALL(LW_SLOT_IO_OUTW,           void (*)(WORD, WORD))
