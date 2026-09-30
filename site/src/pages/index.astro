@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU } from "../data/site";
+import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL } from "../data/site";
 ---
 
 <SiteLayout title="LWOS" windowTitle="LWOS Home Page - Microsoft Internet Explorer">
@@ -101,6 +101,6 @@ make run</pre></div>
 
 <p class="foot">
   <img class="wmimg" src="/assets/img/wordmark-mini.png" width="147" height="45" alt="LWOS">
-  <br><br>Copyleft 2026 &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
+  <br><br>Copyleft 2026 &middot; Page by <a href={AUTHOR_URL}>@{AUTHOR}</a> &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
 </p>
 </SiteLayout>

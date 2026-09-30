@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { REPO, WIKI } from "../data/site";
+import { REPO, WIKI, AUTHOR, AUTHOR_URL } from "../data/site";
 ---
 
 <SiteLayout
@@ -27,6 +27,6 @@ import { REPO, WIKI } from "../data/site";
 
   <p class="foot">
     <img class="wmimg" src="/assets/img/wordmark-mini.png" width="147" height="45" alt="LWOS">
-    <br><br>Copyleft 2026 &middot; An IBM-PC-looking OS that does not need a BIOS
+    <br><br>Copyleft 2026 &middot; Page by <a href={AUTHOR_URL}>@{AUTHOR}</a> &middot; An IBM-PC-looking OS that does not need a BIOS
   </p>
 </SiteLayout>

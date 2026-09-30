@@ -15,6 +15,10 @@ export const WIKI = `${ORIGIN}/wiki/`;
 export const BOCHS = "https://bochs.sourceforge.io/";
 export const QEMU = "https://www.qemu.org/";
 
+/** 页面作者 (前端部分), 出现在页脚署名里。账号和链接分开写, 只改账号就够了。 */
+export const AUTHOR = "No-22-Github";
+export const AUTHOR_URL = `https://github.com/${AUTHOR}`;
+
 export interface NavItem {
   /** 页内锚点, 例如 "#about" */
   href: string;
