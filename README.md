@@ -32,6 +32,8 @@
     tools/  宿主机侧实用工具
     report/ 评审笔记（review）
     SPEC/   规格书
+    spec2/  v2 规格书
+    site/   lwos.dev 站点（Astro，独立于 OS 构建，见 site/README.md）
 
 ## 构建与运行
 

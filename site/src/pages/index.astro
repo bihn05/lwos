@@ -1,0 +1,106 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU } from "../data/site";
+---
+
+<SiteLayout title="LWOS" windowTitle="LWOS Home Page - Microsoft Internet Explorer">
+<!-- banner, laid out like a 1995 imagemap -->
+<div class="banner">
+  <div class="bulb">
+    <svg class="rays" viewBox="0 0 78 60" aria-hidden="true">
+      <g stroke="#e0b400" stroke-width="3" stroke-linecap="square">
+        <line x1="39" y1="16" x2="39" y2="2"/><line x1="26" y1="19" x2="18" y2="7"/><line x1="52" y1="19" x2="60" y2="7"/>
+        <line x1="17" y1="30" x2="4" y2="24"/><line x1="61" y1="30" x2="74" y2="24"/>
+      </g>
+    </svg>
+    <img class="icon" src="/assets/img/lwos.png" alt="LWOS icon">
+    <a class="tag one" href={SPECS}>SPEC<br>SHEETS</a>
+    <a class="tag two" href={REPORT}>REVIEW<br>NOTES</a>
+  </div>
+
+  <div>
+    <div class="pills">
+      <a class="pill" href="#build">SOURCE</a>
+      <span class="amp">&amp;</span>
+      <a class="pill purple" href={WIKI}>DOCS</a>
+    </div>
+    <a class="capsule" href="#about">
+      <img src="/assets/img/lwos.png" alt="">
+      <span><span class="k">CNC Hobby OS</span><span class="t">LWOS<sup>v2</sup></span></span>
+    </a>
+  </div>
+
+  <div class="right">
+    <img class="wmimg" src="/assets/img/wordmark.png" width="147" height="62" alt="LWOS: Every byte by hand.">
+    <a class="globe" href={REPO}><img src="/assets/gif/globe.gif" width="40" height="40" alt="" style="image-rendering:pixelated"><span>Visit GitHub</span></a>
+  </div>
+
+  <div class="bottom-row">
+    <a class="bochs" href={BOCHS}>bochs<i>.</i></a>
+    <a class="cool" href={DEVLOG}>DEV LOG<small>OF THE DAY</small></a>
+    <a class="news" href="#about">v2 is being rebuilt</a>
+  </div>
+</div>
+
+<a class="help" href={WIKI} title="Wiki"><b>?</b><small>WIKI</small></a>
+
+<hr>
+
+<ul class="links">
+  <li><a href="#about">What is LWOS?</a></li>
+  <li><a href="#memory">Flat memory, hardware tasks</a></li>
+  <li><a href="#works">What works today</a></li>
+  <li><a href="#build">Build &amp; run</a></li>
+  <li><a href={WIKI}>Wiki</a></li>
+  <li><a href={SPECS}>Specs</a></li>
+  <li><a href={DEVLOG}>Dev log</a></li>
+  <li><a href={REPO}>Visit GitHub</a></li>
+</ul>
+
+<hr class="rb">
+
+<div class="marquee" aria-label="News"><span>*** 2026-09-30: spec2 drafted *** Now working on P1: first pixels on screen &amp; PCI device listing *** No BIOS required ***</span></div>
+
+<p style="margin-top:14px"><span class="wmbox"><img class="wmimg" src="/assets/img/wordmark.png" width="294" height="124" alt="LWOS: Every byte by hand."></span></p>
+
+<hr>
+
+<h2 id="about"><img src="/assets/gif/spin.gif" alt="">What is LWOS?</h2>
+<p>A hobby operating system for CNC milling machines. It looks and feels like an IBM PC, but it doesn't depend on the BIOS.</p>
+<figure class="crt"><img src="/assets/gif/boot.gif" width="640" height="288" alt="LWOS loader reading FAT32, then the MONITOR prompt"><figcaption>From power-on to the MONITOR prompt (illustration)</figcaption></figure>
+<p class="ucrow"><img src="/assets/gif/construction.gif" width="140" height="44" alt="Under construction"><span><b>UNDER CONSTRUCTION</b><br>v2 is an early rewrite. APIs and layout may change without notice.</span></p>
+
+<hr>
+
+<h2 id="memory">Flat memory, hardware tasks</h2>
+<p>No paging and no page tables. Everything lives in one flat 4&nbsp;GB address space, so a C pointer is a physical address you can hand straight to a DMA engine. Each task gets a TSS descriptor in the GDT, and the timer switches between them with a far jump.</p>
+<figure class="crt"><img src="/assets/gif/flatmem.gif" width="560" height="336" alt="Memory map from 0 to 4 GB beside the GDT; the timer jumps between TSS entries for MONITOR, task A and task B"><figcaption>One address space, three tasks, no walls. Multitasking is planned for P7 (illustration)</figcaption></figure>
+
+<hr>
+
+<h2 id="works">What works today <img src="/assets/gif/new.gif" width="40" height="16" alt="NEW!" style="vertical-align:middle;margin-left:6px"></h2>
+<ul class="links plain">
+  <li>MBR boot with partition table</li>
+  <li>Read-only FAT32 in the loader</li>
+  <li><code>mkfat</code>, a host tool for building FAT images</li>
+</ul>
+<p style="margin-top:8px">Coming next: a <code>DEBUG.COM</code>-style monitor, an <code>EDIT.COM</code>-style editor, and the CNC stack.</p>
+
+<hr>
+
+<h2 id="build">Build &amp; run</h2>
+<p>You need <code>make</code>, a C compiler, and <a href={QEMU}>QEMU</a> or <a href={BOCHS}>Bochs</a>.</p>
+<div class="scroll-x"><pre>git clone {REPO}
+cd lwos
+make run</pre></div>
+<p><a class="btn95" href={REPO}>Get the source...</a> <a class="btn95" href={WIKI}>Read the wiki</a></p>
+
+<hr class="rb">
+
+<p class="btns"><img src="/assets/gif/btn-lwos.gif" width="88" height="31" alt="LWOS now!"><img src="/assets/gif/btn-bochs.gif" width="88" height="31" alt="Best viewed in Bochs"><img src="/assets/gif/btn-nobios.gif" width="88" height="31" alt="BIOS-free"><img src="/assets/gif/btn-make.gif" width="88" height="31" alt="Powered by make run"><img src="/assets/gif/btn-x86.gif" width="88" height="31" alt="x86 32-bit protected mode"></p>
+
+<p class="foot">
+  <img class="wmimg" src="/assets/img/wordmark-mini.png" width="147" height="45" alt="LWOS">
+  <br><br>Copyleft 2026 &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
+</p>
+</SiteLayout>

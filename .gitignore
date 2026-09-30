@@ -10,4 +10,12 @@ tools/mkfat/mkfat
 # Logs
 *.log
 
+# The lwos.dev site (site/). Source and assets are tracked;
+# dependencies and build output are not — Cloudflare Workers Builds runs
+# `pnpm build` followed by `wrangler deploy` on every push.
+site/node_modules/
+site/dist/
+site/.astro/
+.pnpm-store/
+
 # SPEC/ and report/ are tracked on purpose — do not ignore

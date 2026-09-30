@@ -1,0 +1,171 @@
+---
+/**
+ * 每个页面都住在里面的那个 Win95 版 Internet Explorer 外壳。
+ * 页面只负责 .page 里的内容; 标题栏、菜单、地址栏、工具栏、
+ * 状态栏和对话框都由这里提供。
+ */
+import "../styles/chrome.css";
+import "../styles/page.css";
+import {
+  ORIGIN, REPO, SPECS, REPORT, ROADMAP, DEVLOG, WIKI, BOCHS, QEMU,
+  homeSections, type NavItem,
+} from "../data/site";
+
+interface Props {
+  /** <title> 的内容 */
+  title?: string;
+  /** 假标题栏里显示的文字 */
+  windowTitle?: string;
+  /** 地址栏为当前页面显示的 URL */
+  path?: string;
+  /** Go 菜单的条目; 一般就是当前页面自己的小节 */
+  sections?: NavItem[];
+}
+
+const {
+  title = "LWOS",
+  windowTitle = "LWOS Home Page - Microsoft Internet Explorer",
+  path = `${ORIGIN}/`,
+  sections = homeSections,
+} = Astro.props;
+
+const addressList = [
+  `${ORIGIN}/`,
+  ...sections.map((s) => `${ORIGIN}/${s.href}`),
+  WIKI,
+  REPO,
+];
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{title}</title>
+  <link rel="icon" href="/assets/img/lwos.png">
+</head>
+<body>
+<div class="win" role="application" aria-label={title} data-origin={ORIGIN} data-base={path}>
+  <div class="titlebar">
+    <img src="/assets/img/lwos.png" alt="">
+    <span>{windowTitle}</span>
+    <button class="tb-btn" aria-label="Minimize" tabindex="-1">_</button>
+    <button class="tb-btn" aria-label="Maximize" tabindex="-1">□</button>
+    <button class="tb-btn x" aria-label="Close" tabindex="-1">×</button>
+  </div>
+
+  <div class="menubar" id="menubar" role="menubar">
+    <div class="mi"><button class="mt" aria-haspopup="true"><u>F</u>ile</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitem" data-act="open">Open...<kbd>Ctrl+L</kbd></button>
+        <button role="menuitem" disabled>Save As...</button>
+        <button role="menuitem" disabled>Print...</button>
+        <hr>
+        <button role="menuitem" data-act="props">Properties</button>
+        <button role="menuitem" disabled>Close</button>
+      </div></div>
+    <div class="mi"><button class="mt" aria-haspopup="true"><u>E</u>dit</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitem" disabled>Cut</button>
+        <button role="menuitem" data-act="copy">Copy Address</button>
+        <button role="menuitem" disabled>Paste</button>
+        <hr>
+        <button role="menuitem" data-act="selall">Select All</button>
+      </div></div>
+    <div class="mi"><button class="mt" aria-haspopup="true"><u>V</u>iew</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitemcheckbox" data-act="tg-toolbar" class="chk on">Toolbar</button>
+        <button role="menuitemcheckbox" data-act="tg-addr" class="chk on">Address Bar</button>
+        <button role="menuitemcheckbox" data-act="tg-status" class="chk on">Status Bar</button>
+        <hr>
+        <button role="menuitemradio" data-act="font-l" class="rad">Fonts: Larger</button>
+        <button role="menuitemradio" data-act="font-m" class="rad on">Fonts: Medium</button>
+        <button role="menuitemradio" data-act="font-s" class="rad">Fonts: Smaller</button>
+        <hr>
+        <button role="menuitem" data-act="refresh">Refresh<kbd>F5</kbd></button>
+        <button role="menuitem" data-href={REPO}>Source</button>
+      </div></div>
+    <div class="mi"><button class="mt" aria-haspopup="true"><u>G</u>o</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitem" data-act="back">Back<kbd>Alt+&larr;</kbd></button>
+        <button role="menuitem" data-act="fwd">Forward<kbd>Alt+&rarr;</kbd></button>
+        <button role="menuitem" data-go="#top">Home Page</button>
+        {sections.length > 0 && (
+          <>
+            <hr>
+            {sections.map((s) => (
+              <button role="menuitem" data-go={s.href}>{s.label}</button>
+            ))}
+          </>
+        )}
+        <hr>
+        <button role="menuitem" data-href={WIKI}>Wiki</button>
+      </div></div>
+    <div class="mi"><button class="mt" aria-haspopup="true">F<u>a</u>vorites</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitem" data-href={SPECS}>Spec sheets</button>
+        <button role="menuitem" data-href={ROADMAP}>Roadmap</button>
+        <button role="menuitem" data-href={DEVLOG}>Dev log</button>
+        <hr>
+        <button role="menuitem" data-href={BOCHS}>Bochs</button>
+        <button role="menuitem" data-href={QEMU}>QEMU</button>
+      </div></div>
+    <div class="mi"><button class="mt" aria-haspopup="true"><u>H</u>elp</button>
+      <div class="menu" role="menu" hidden>
+        <button role="menuitem" data-href={WIKI}>Contents</button>
+        <hr>
+        <button role="menuitem" data-act="about">About LWOS</button>
+      </div></div>
+  </div>
+
+  <div class="addr bevel-out" id="addrbar">
+    <label for="addr">Address</label>
+    <form class="combo" id="addrform" autocomplete="off">
+      <input class="field bevel-in" id="addr" value={path} spellcheck="false" aria-controls="addrlist" aria-autocomplete="list">
+      <button type="button" class="go bevel-out" id="addrdrop" aria-label="Show addresses" aria-expanded="false">▼</button>
+      <ul class="alist" id="addrlist" role="listbox" hidden>
+        {addressList.map((url) => (
+          <li role="option" data-url={url}>{url}</li>
+        ))}
+      </ul>
+    </form>
+    <div class="throbber"><img src="/assets/img/lwos.png" alt=""></div>
+  </div>
+
+  <div class="toolbar bevel-out" id="toolbar">
+    <button class="tool" id="t-back" disabled><span class="g">⇦</span><span class="l">Back</span></button>
+    <button class="tool" id="t-fwd" disabled><span class="g">⇨</span><span class="l">Forward</span></button>
+    <button class="tool" id="t-stop"><span class="g">⊗</span><span class="l">Stop</span></button>
+    <button class="tool" id="t-refresh"><span class="g">↻</span><span class="l">Refresh</span></button>
+    <button class="tool" id="t-home"><span class="g">⌂</span><span class="l">Home</span></button>
+    <span class="sep"></span>
+    <a class="tool" href={SPECS}><span class="g">☰</span><span class="l">Spec</span></a>
+    <a class="tool" href={REPO}><span class="g">✉</span><span class="l">Source</span></a>
+  </div>
+
+  <div class="viewport">
+    <div class="page" id="top">
+      <slot />
+    </div>
+  </div>
+
+  <div class="statusbar" id="statusbar">
+    <div class="s1 bevel-in" id="status">Done</div>
+    <div class="s2 bevel-in"><span aria-hidden="true" style="width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bfe0ff,#2b6fd8 50%,#082a73);display:inline-block"></span>Internet zone</div>
+  </div>
+
+  <div class="dlg-veil" id="veil" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+      <div class="titlebar"><span id="dlg-title">About LWOS</span><button class="tb-btn x" id="dlg-x" aria-label="Close">×</button></div>
+      <div class="dlg-body"><img id="dlg-icon" src="data:," width="32" height="32" alt=""><div id="dlg-text"></div></div>
+      <div class="dlg-btns"><button class="btn95" id="dlg-ok">OK</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import "../scripts/ie-chrome.js";
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lwos-site",
+  "compatibility_date": "2026-10-01",
+
+  // 纯静态资源的 Worker: 没有 main 脚本, Cloudflare 只负责把 dist/ 发出去。
+  // 静态资源的请求是免费且不限量的。
+  "assets": {
+    "directory": "./dist",
+
+    // 匹配不到文件时用 dist/404.html 回应。
+    "not_found_handling": "404-page"
+
+    // html_handling 保持默认的 auto-trailing-slash,
+    // 也就是把 /wiki/ 映射到 /wiki/index.html。
+  }
+}
