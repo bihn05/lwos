@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Index</title>
+</head>
+<body bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#800080" alink="#FF0000">
+<a name="top"></a>
+
+<center>
+<pre>
+ _     __        __  ___   ____
+| |    \ \      / / / _ \ / ___|
+| |     \ \ /\ / / | | | |\___ \
+| |___   \ V  V /  | |_| | ___) |
+|_____|   \_/\_/    \___/ |____/
+</pre>
+<b>LWOS 讨论区</b><br>
+<small>一个面向 CNC 铣床的业余操作系统</small>
+</center>
+
+<hr>
+
+<center>
+<small>
+[<a href="#about">关于</a>]
+[<a href="#status">现状</a>]
+[<a href="#boot">启动链</a>]
+[<a href="#plan">规划</a>]
+[<a href="#build">构建</a>]
+[<a href="#docs">文档</a>]
+[<a href="#board">留言板</a>]
+</small>
+</center>
+
+<hr>
+
+<p>
+<small>
+当前位置：<a href="index.html">首页</a> &gt; 系统介绍<br>
+本页最后更新：2026年9月30日<br>
+建议使用 800x600 分辨率浏览
+</small>
+</p>
+
+<a name="about"></a>
+<h3>一、关于 LWOS</h3>
+
+<p>
+LWOS 是一个面向 CNC（计算机数控）铣削设备的业余操作系统。外观和操作感受参考 IBM-PC，
+但系统本身不依赖 BIOS。固件支持（自定义 BIOS、IBM 兼容机）属于另一个独立项目，不在本项目范围内。
+</p>
+
+<p>
+所有代码都是手工编写的。目前处于第二版（v2）的重写阶段，仓库正在从零开始重建，
+API 和目录结构随时可能变更，不另行通知。
+</p>
+
+<p>
+磁盘格式：FAT32 + 自制 LOADER。<br>
+运行环境：QEMU 或 Bochs 模拟器。
+</p>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="status"></a>
+<h3>二、目前可用的功能</h3>
+
+<ul>
+<li><b>MBR</b> -- 引导系统盘，读取分区表。</li>
+<li><b>FAT32（只读）</b> -- 简化版 FAT32 读取，实现在 LOADER 里。以后会做多级目录和读写。</li>
+<li><b>tools/mkfat</b> -- 宿主机上用来制作 FAT 镜像的小工具，C 语言。</li>
+<li><b>MONITOR.BIN</b> -- 调试器兼命令行，启动后进入这里。</li>
+</ul>
+
+<p>
+其余部分（shell、实用工具、CNC 相关功能）还在规划中，尚未实现。
+</p>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="boot"></a>
+<h3>三、启动链</h3>
+
+<p>开机以后依次经过以下几个阶段：</p>
+
+<pre>
+MBR (0x7C00)
+  |
+  v
+STAGE2 (0x900, 实模式)
+  |-- 收集 E820 内存表      -&gt; 0x8000
+  |-- 收集 VBE/EDID/显卡信息 -&gt; 0x9000
+  |-- 留下 BIOS 跳板         -&gt; 0xA000
+  `-- 读 FAT32, 找到 LOADER.BIN -&gt; 0x10000, 进入保护模式
+  |
+  v
+LOADER.BIN (0x10000)
+  `-- 按 BOOT.INI 加载:
+        ABI.BIN     -&gt; 0x100000  (库映像)
+        MONITOR.BIN -&gt; 0x200000  (调试器 / 命令行)
+</pre>
+
+<p>
+说明：没有分页，所有设备目前都用轮询方式工作，没有定时器中断。
+</p>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="plan"></a>
+<h3>四、正在规划的</h3>
+
+<ol>
+<li><b>MONITOR.BIN</b> -- 仿照 MS-DOS 的 DEBUG.COM，但提供更多 ABI 调用。</li>
+<li><b>EDIT.EXE</b> -- 仿照 MS-DOS 的 EDIT.COM 的文本编辑器。</li>
+<li><b>PCI 枚举、AHCI 驱动</b> -- 从硬盘读取程序。</li>
+<li><b>网卡驱动</b> -- 82540EM（模拟器用）和 82567LM（真机用），用一根网线直连，不停机传文件。</li>
+<li><b>LWP 可执行格式、DLL</b> -- 带重定位的程序加载。</li>
+<li><b>图形界面</b> -- 从画布和填充矩形做起。</li>
+<li><b>任务切换</b> -- 基于 GDT/TSS，放在最后做。</li>
+</ol>
+
+<p>
+详细的计划见 <a href="../spec2/90-roadmap.md">总路线</a>。
+</p>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="build"></a>
+<h3>五、构建与运行</h3>
+
+<p>需要：</p>
+<ul>
+<li>有 make 的 Unix 类环境</li>
+<li>C 编译器</li>
+<li><a href="https://www.qemu.org/">QEMU</a> 或 <a href="https://bochs.sourceforge.io/">Bochs</a></li>
+</ul>
+
+<p>在模拟器中构建并启动：</p>
+
+<pre>
+make run
+</pre>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="docs"></a>
+<h3>六、文档下载</h3>
+
+<table border="1" cellpadding="3" cellspacing="0">
+<tr><th>编号</th><th>文件</th><th>内容</th></tr>
+<tr><td>00</td><td><a href="../spec2/00-index.md">00-index.md</a></td><td>规格书目录</td></tr>
+<tr><td>01</td><td><a href="../spec2/01-baseline.md">01-baseline.md</a></td><td>v2 现状快照</td></tr>
+<tr><td>02</td><td><a href="../spec2/02-decisions.md">02-decisions.md</a></td><td>横切决策</td></tr>
+<tr><td>10</td><td><a href="../spec2/10-memory-layout.md">10-memory-layout.md</a></td><td>物理内存布局</td></tr>
+<tr><td>20</td><td><a href="../spec2/20-pci-enum.md">20-pci-enum.md</a></td><td>PCI 枚举</td></tr>
+<tr><td>21</td><td><a href="../spec2/21-ahci.md">21-ahci.md</a></td><td>AHCI 驱动</td></tr>
+<tr><td>22</td><td><a href="../spec2/22-blockdev-fs.md">22-blockdev-fs.md</a></td><td>块设备与文件系统</td></tr>
+<tr><td>30</td><td><a href="../spec2/30-net.md">30-net.md</a></td><td>网络</td></tr>
+<tr><td>40</td><td><a href="../spec2/40-lwp-exe.md">40-lwp-exe.md</a></td><td>LWP 可执行格式</td></tr>
+<tr><td>41</td><td><a href="../spec2/41-dll.md">41-dll.md</a></td><td>DLL</td></tr>
+<tr><td>50</td><td><a href="../spec2/50-resman-memory.md">50-resman-memory.md</a></td><td>内存资源管理</td></tr>
+<tr><td>51</td><td><a href="../spec2/51-tasks.md">51-tasks.md</a></td><td>任务切换</td></tr>
+<tr><td>60</td><td><a href="../spec2/60-gui.md">60-gui.md</a></td><td>图形界面</td></tr>
+<tr><td>99</td><td><a href="../spec2/99-log.md">99-log.md</a></td><td>开发日志</td></tr>
+</table>
+
+<p>
+另见：<a href="../README.md">README.md</a>
+</p>
+
+<p><a href="#top">返回顶部</a></p>
+
+<hr>
+
+<a name="board"></a>
+<h3>七、留言板</h3>
+
+<table border="1" cellpadding="4" cellspacing="0" width="100%">
+<tr>
+<td width="20%" valign="top"><b>站长</b><br><small>2026-09-30</small></td>
+<td valign="top">
+本站开通。v2 规格书已经写好初稿，下一步先做图形界面的画布，或者 PCI 枚举，看哪个有灵感。
+</td>
+</tr>
+<tr>
+<td width="20%" valign="top"><b>站长</b><br><small>2026-09-30</small></td>
+<td valign="top">
+提醒一下：画曲线的时候数组下标没检查，越界把栈踩坏了，Bochs 日志里是一串 GDT index 越界。
+以后看到这种日志，先找最近写过的数组。
+</td>
+</tr>
+</table>
+
+<p>
+<small>留言请发邮件给站长。</small>
+</p>
+
+<hr>
+
+<center>
+<small>
+<a href="#top">返回顶部</a> | <a href="index.html">首页</a> | <a href="../README.md">说明</a><br>
+<br>
+LWOS 讨论区 (C) 2026<br>
+本站所有内容均为手工编写
+</small>
+</center>
+
+</body>
+</html>

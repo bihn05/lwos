@@ -2,6 +2,8 @@
 #include "abi.h"
 #include "ctx.h"
 
+#include "eth.h"
+
 PVOID *lw_abi_base;
 
 /* ABI 不可用时连 puts 都没有, 只能直接写显存 */
@@ -67,6 +69,10 @@ static int hex_catch(char c) {
     }
 }
 
+extern void pci_scan(void);
+extern void pci_detail(BYTE bus,BYTE dev,BYTE fn);
+extern int pci_find_class(BYTE cls, BYTE sub, PBYTE bus, PBYTE dev, PBYTE fn);
+
 static int parse_hex(const char **p, PDWORD out) {
     const char *s = *p;
     DWORD v = 0;
@@ -92,7 +98,7 @@ static void execute(const char* str) {
     char c1;
     skip_ws(&str);
     DWORD a;
-    //DWORD b;
+    DWORD b;
 
     if (!*str)return;
     c0 = *str++;
@@ -111,8 +117,130 @@ static void execute(const char* str) {
             lw_dump128((PVOID)a);
             break;
         }
+        case 'o': { // out/write
+            if (!parse_hex(&str, &a)) {
+                return;
+            }
+            if (!parse_hex(&str,&b)) {
+                return;
+            }
+            switch (c1) {
+                case 'b': {
+                    a&=0xffffffff;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_byte(b);
+                    lw_puts("\n\r");
+                    *(PBYTE)(a)=(BYTE)b;
+                    if (*(PBYTE)a!=(BYTE)b) {
+                        lw_puts("WROTE FAIL\n\r");
+                        lw_put_dword(a);
+                        lw_puts(":");
+                        lw_put_byte(*(PBYTE)a);
+                        lw_puts("\n\r");
+                    }
+                    break;
+                }
+                case 'w': {
+                    a&=0xfffffffe;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_word(b);
+                    lw_puts("\n\r");
+                    *(PWORD)(a)=(WORD)b;
+                    if (*(PWORD)a!=(WORD)b) {
+                        lw_puts("WROTE FAIL\n\r");
+                        lw_put_dword(a);
+                        lw_puts(":");
+                        lw_put_word(*(PWORD)a);
+                        lw_puts("\n\r");
+                    }
+                    break;
+                }
+                case 'l': {
+                    a&=0xfffffffc;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_dword(b);
+                    lw_puts("\n\r");
+                    *(PDWORD)(a)=(DWORD)b;
+                    if (*(PDWORD)a!=(DWORD)b) {
+                        lw_puts("WROTE FAIL\n\r");
+                        lw_put_dword(a);
+                        lw_puts(":");
+                        lw_put_byte(*(PDWORD)a);
+                        lw_puts("\n\r");
+                    }
+                    break;
+                }
+                default:return;
+            }
+            break;
+        }
+        case 'i': { // in/read
+            DWORD d;
+            if (!parse_hex(&str, &a)) {
+                return;
+            }
+            switch (c1) {
+                case 'b': {
+                    a&=0xffffffff;
+                    d=*(PBYTE)a;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_byte(d);
+                    lw_puts("\n\r");
+                    break;
+                }
+                case 'w': {
+                    a&=0xfffffffe;
+                    d=*(PWORD)a;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_word(d);
+                    lw_puts("\n\r");
+                    break;
+                }
+                case 'l': {
+                    a&=0xfffffffc;
+                    d=*(PDWORD)a;
+                    lw_put_dword(a);
+                    lw_puts(":");
+                    lw_put_dword(d);
+                    lw_puts("\n\r");
+                    break;
+                }
+                default:return;
+            }
+            break;
+        }
+        case 'n': {
+            if (c1==0) {
+                if (pci_find_class(2,0,&eth_b,&eth_d,&eth_f)==0) {
+                    lw_puts("NO ETHERNET DEVICE FOUND\n\r");
+                    return;
+                }
+                
+                return;
+            }
+            break;
+        }
         case 'p': {
-
+            DWORD bus, dev, fn;
+            if (!parse_hex(&str,&bus)) {
+                pci_scan();
+                return;
+            }
+            if (!parse_hex(&str,&dev) || !parse_hex(&str, &fn)) {
+                pci_scan();
+                return;
+            }
+            if (bus > 0xFF || dev > 31 || fn > 7) {
+                lw_puts("INVALID BDF\n\r");
+                return;
+            }
+            pci_detail((BYTE)bus,(BYTE)dev,(BYTE)fn);
+            break;
         }
         case 'v': {
             int rc;
@@ -156,8 +284,6 @@ static void execute(const char* str) {
             for (int i=0;i<fb_h;i++) {
                 putpixel(fb_w/2, i, 0xffffff);
             }
-            
-            draw_curve();
 
             break;
         }

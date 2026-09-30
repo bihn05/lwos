@@ -29,18 +29,19 @@ enum {
 
     // console output
     LW_SLOT_CONSOLE_PUTC        = 0x10,
-    LW_SLOT_CONSOLE_PUTS        = 0x11,
-    LW_SLOT_CONSOLE_PUTCA       = 0x12,
-    LW_SLOT_CONSOLE_PUT_BYTE    = 0x13,
-    LW_SLOT_CONSOLE_PUT_WORD    = 0x14,
-    LW_SLOT_CONSOLE_PUT_DWORD   = 0x15,
-    LW_SLOT_CONSOLE_PUT_QWORD   = 0x16,
-    LW_SLOT_CONSOLE_CLEAR       = 0x17,
-    LW_SLOT_CONSOLE_DUMP128     = 0x18,
-    LW_SLOT_CONSOLE_PUT_DEC32   = 0x19,
-    LW_SLOT_CONSOLE_GETK        = 0x1a,
-    LW_SLOT_CONSOLE_GETC        = 0x1b,
-    LW_SLOT_CONSOLE_GETP        = 0x1c,
+    LW_SLOT_CONSOLE_PUTCA       = 0x11,
+    LW_SLOT_CONSOLE_PUTS        = 0x12,
+    LW_SLOT_CONSOLE_PUTS_PAD    = 0x13,
+    LW_SLOT_CONSOLE_PUT_BYTE    = 0x14,
+    LW_SLOT_CONSOLE_PUT_WORD    = 0x15,
+    LW_SLOT_CONSOLE_PUT_DWORD   = 0x16,
+    LW_SLOT_CONSOLE_PUT_QWORD   = 0x17,
+    LW_SLOT_CONSOLE_CLEAR       = 0x18,
+    LW_SLOT_CONSOLE_DUMP128     = 0x19,
+    LW_SLOT_CONSOLE_PUT_DEC32   = 0x1a,
+    LW_SLOT_CONSOLE_GETK        = 0x1b,
+    LW_SLOT_CONSOLE_GETC        = 0x1c,
+    LW_SLOT_CONSOLE_GETP        = 0x1d,
 
     // devices
     // not out dx, al because this way may
@@ -85,8 +86,9 @@ extern PVOID *lw_abi_base;
 #define LW_CALL(slot, type) ((type)lw_abi_base[slot])
 
 #define lw_putc         LW_CALL(LW_SLOT_CONSOLE_PUTC,      void (*)(char))
-#define lw_puts         LW_CALL(LW_SLOT_CONSOLE_PUTS,      void (*)(char *))
 #define lw_putca        LW_CALL(LW_SLOT_CONSOLE_PUTCA,     void (*)(char))
+#define lw_puts         LW_CALL(LW_SLOT_CONSOLE_PUTS,      void (*)(const char *))
+#define lw_puts_pad     LW_CALL(LW_SLOT_CONSOLE_PUTS_PAD,  void (*)(const char *, int))
 #define lw_put_byte     LW_CALL(LW_SLOT_CONSOLE_PUT_BYTE,  void (*)(BYTE))
 #define lw_put_word     LW_CALL(LW_SLOT_CONSOLE_PUT_WORD,  void (*)(WORD))
 #define lw_put_dword    LW_CALL(LW_SLOT_CONSOLE_PUT_DWORD, void (*)(DWORD))

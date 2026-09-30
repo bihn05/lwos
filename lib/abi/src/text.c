@@ -90,11 +90,24 @@ void putca(char c) {
     }
 }
 
-void puts(char* s) {
+void puts(const char* s) {
     get_cursor();       // 整串只同步一次
     while (*s) {
         putc_raw(*s);
         s++;
+    }
+    set_cursor();
+}
+
+void puts_pad(const char* s, int width) {
+    get_cursor();
+    int n=0;
+    while (*s!=0) {
+        putc_raw(*(s++));
+        n++;
+    }
+    while (n++<width) {
+        putc_raw(' ');
     }
     set_cursor();
 }

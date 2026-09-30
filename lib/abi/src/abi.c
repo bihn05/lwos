@@ -27,8 +27,9 @@ const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(
     [LW_SLOT_STACK_TOP] = 0,    /* 库映像, 无自己的栈 */
 
     [LW_SLOT_CONSOLE_PUTC]      = (PVOID)putc,
-    [LW_SLOT_CONSOLE_PUTS]      = (PVOID)puts,
     [LW_SLOT_CONSOLE_PUTCA]     = (PVOID)putca,
+    [LW_SLOT_CONSOLE_PUTS]      = (PVOID)puts,
+    [LW_SLOT_CONSOLE_PUTS_PAD]  = (PVOID)puts_pad,
     [LW_SLOT_CONSOLE_PUT_BYTE]  = (PVOID)put_byte,
     [LW_SLOT_CONSOLE_PUT_WORD]  = (PVOID)put_word,
     [LW_SLOT_CONSOLE_PUT_DWORD] = (PVOID)put_dword,
