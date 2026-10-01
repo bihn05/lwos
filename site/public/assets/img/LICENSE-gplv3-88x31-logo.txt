@@ -1,5 +1,4 @@
-GPLv3 logo — public/assets/img/gplv3-88x31.png (original)
-              public/assets/img/gplv3-88x31-pixel.png (what the page renders)
+GPLv3 logo — public/assets/img/gplv3-88x31.png
 
 Source:     https://www.gnu.org/graphics/license-logos.html
 File:       https://www.gnu.org/graphics/gplv3-88x31.png
@@ -16,23 +15,21 @@ and LGPL logos are in the public domain, and the page says outright:
     AGPL, feel free to use these buttons on your site or in your application
     to advertise the license.
 
-Public domain means there is no restriction on modifying them, so the
-pixelated derivative below needs no permission. The design credit above is a
-courtesy, not a condition.
+Public domain means there is no restriction on modifying them either, so a
+recoloured or pixelated variant would need no permission. The design credit
+above is a courtesy, not a condition.
 
-Which file is which
--------------------
-gplv3-88x31.png        The official artwork, byte for byte. Don't edit it — it
-                       is the input tools/mkgpl.py reads, and the sha256 above
-                       is how you tell it is still pristine.
-gplv3-88x31-pixel.png  Derived: half size with BOX, blown back up with NEAREST
-                       (each source pixel becomes a 2x2 block), then quantised
-                       to 8 colours to drop the anti-aliasing. This is the one
-                       index.astro renders, in the banner's bottom row.
-                       Regenerate with `python3 tools/mkgpl.py`.
+How it is used
+--------------
+Byte for byte — no recolouring, no re-encoding, no pixelation. It sits in the
+banner's bottom row, right beside bochs. That part of the page is 30px Arial
+Black text and gradient pills, i.e. high resolution, so the anti-aliased
+original belongs there. A pixelated variant was tried and dropped: next to
+bochs. it just looked mushy. The hand-drawn 88x31 GIFs further down the page
+are a different, deliberately low-res collage.
 
 Deliberately the plain GPLv3 button, NOT gplv3-or-later-sm.png from the same
 page: that one reads "OR LATER" and would misstate GPL-3.0-only.
 
-Both files keep an alpha channel, so the background shows through the corners —
-that is how the original is built. The badge sits on the banner, which is white.
+It keeps an alpha channel, so the background shows through the corners — that
+is how the original is built. The badge sits on the banner, which is white.
