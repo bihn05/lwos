@@ -41,12 +41,13 @@ Go 菜单和地址栏的补全列表都由同一个 `homeSections` 生成, 不�
 
 ## 重新生成图片资源
 
-`tools/` 里那三个脚本需要 Pillow:
+`tools/` 里那几个脚本需要 Pillow:
 
     pip install pillow
     python3 tools/mkgif.py     # boot/globe/new/divider/construction/spin 以及 5 个 88x31 按钮
     python3 tools/mkmem.py     # flatmem.gif
     python3 tools/mkwm.py      # wordmark.png / wordmark-mini.png
+    python3 tools/mkgpl.py     # gplv3-88x31-pixel.png (从官方按钮派生)
 
 它们直接写进 `public/assets/`, 不需要再手动拷贝一遍。
 脚本里的字体和图标输入在 `tools/fonts/` 和 `public/assets/img/lwos.png`。
@@ -56,10 +57,13 @@ Go 菜单和地址栏的补全列表都由同一个 `homeSections` 生成, 不�
 > 图片对不上 (肉眼看不出差别, 但 sha256 变了)。所以 **别因为顺手跑了一遍脚本
 > 就把这些图片的改动提交上去**, 除非你确实想要新图。
 
-另外 `public/assets/img/gplv3-88x31.png` 是 **FSF 官方的 GPLv3 按钮**, 不是上面
-这些脚本生成的 —— 别去 `tools/` 里找它。来源、公有领域声明和 sha256 记在
-`public/assets/img/LICENSE-gplv3-88x31-logo.txt`。按钮行里只有它是链接 (指向
-仓库根目录的 `LICENSE`), 其余几个纯粹是装饰。
+`public/assets/img/gplv3-88x31.png` 是 **FSF 官方的 GPLv3 按钮** (公有领域);
+`gplv3-88x31-pixel.png` 是 `tools/mkgpl.py` 从它派生的像素化版本, 页面用的是
+后者 —— 官方那张抗锯齿的原图和站上手工画的 1995 年图形放一起太"新"。来源、
+公有领域声明、设计者和 sha256 记在
+`public/assets/img/LICENSE-gplv3-88x31-logo.txt`。想调像素化的力度就改
+`tools/mkgpl.py`, **别直接改那两个 PNG**。这个徽章是 banner 底部那排里唯一的
+链接 (指向仓库根目录的 `LICENSE`)。
 
 ## 部署 (Cloudflare Workers)
 

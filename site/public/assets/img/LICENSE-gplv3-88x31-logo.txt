@@ -1,10 +1,14 @@
-GPLv3 logo, 88x31 — public/assets/img/gplv3-88x31.png
+GPLv3 logo — public/assets/img/gplv3-88x31.png (original)
+              public/assets/img/gplv3-88x31-pixel.png (what the page renders)
 
 Source:     https://www.gnu.org/graphics/license-logos.html
 File:       https://www.gnu.org/graphics/gplv3-88x31.png
 Downloaded: 2026-10-01
 sha256:     3bd7654100b5dc453358000210ae28f5a99e9c8794e0d561e1c37c1729c069ed
+Design:     José Obed, per the FSF page
 
+Licence
+-------
 Per the "Copyright and license" section of that page, the official GPL, AGPL
 and LGPL logos are in the public domain, and the page says outright:
 
@@ -12,10 +16,23 @@ and LGPL logos are in the public domain, and the page says outright:
     AGPL, feel free to use these buttons on your site or in your application
     to advertise the license.
 
-This project is GPL-3.0-only, so this is the plain GPLv3 button. Do NOT swap in
-gplv3-or-later-sm.png from the same page: that one reads "OR LATER" and would
-misstate the license.
+Public domain means there is no restriction on modifying them, so the
+pixelated derivative below needs no permission. The design credit above is a
+courtesy, not a condition.
 
-The file is a verbatim copy of the official artwork — no recolouring, no
-re-encoding. It has an alpha channel, so the page background shows through the
-corners; that is how the original is built, not an artefact of this repo.
+Which file is which
+-------------------
+gplv3-88x31.png        The official artwork, byte for byte. Don't edit it — it
+                       is the input tools/mkgpl.py reads, and the sha256 above
+                       is how you tell it is still pristine.
+gplv3-88x31-pixel.png  Derived: half size with BOX, blown back up with NEAREST
+                       (each source pixel becomes a 2x2 block), then quantised
+                       to 8 colours to drop the anti-aliasing. This is the one
+                       index.astro renders, in the banner's bottom row.
+                       Regenerate with `python3 tools/mkgpl.py`.
+
+Deliberately the plain GPLv3 button, NOT gplv3-or-later-sm.png from the same
+page: that one reads "OR LATER" and would misstate GPL-3.0-only.
+
+Both files keep an alpha channel, so the background shows through the corners —
+that is how the original is built. The badge sits on the banner, which is white.
