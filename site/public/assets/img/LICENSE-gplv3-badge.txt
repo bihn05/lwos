@@ -1,0 +1,49 @@
+GPLv3 badge — public/assets/img/gplv3-badge.svg
+
+Upstream:    https://www.gnu.org/graphics/license-logos.html
+Source:      https://www.gnu.org/graphics/gpl-v3-logo.svg
+Downloaded:  2026-10-01
+sha256 of the upstream file before cropping:
+             ea96b4facae9553b21abffefabb50fd24ad38c07518404faf5905f505a6434f6
+Design:      José Obed, per the FSF page
+
+Licence
+-------
+Per the "Copyright and license" section of that page, the official GPL, AGPL
+and LGPL logos are in the public domain, and the page says outright:
+
+    If you are releasing work under ... version 3 of the GNU GPL, LGPL, or
+    AGPL, feel free to use these buttons on your site or in your application
+    to advertise the license.
+
+Public domain means there is no restriction on modifying them, so the cropping
+below needs no permission. The design credit above is a courtesy, not a
+condition.
+
+What was changed, and only this
+-------------------------------
+Upstream is an Inkscape A4 page (744.09 x 1052.36, no viewBox at all) holding
+TWO lockups — a red one and a black duplicate — plus a "Free as in Freedom"
+line, so it cannot be used as-is:
+
+  * dropped <g id="g3413">          the whole black duplicate lockup (-40372 B)
+  * dropped <g id="g2587..g2643>    the 15 glyph groups of "Free as in Freedom"
+  * replaced the root width/height  with a tight viewBox around the badge:
+                                    "36.66 19.16 698.86 279.25"
+
+82482 -> 30816 bytes. Everything else — the Inkscape metadata, defs, namedview,
+the red group's transform — is byte for byte upstream. The four remaining paths
+are path2577/path2579/path2583 (flat #bd0000, no stroke) and path2647 (the
+swoosh, stroke-width 8.53, so the box is padded by half of that). The box also
+counts Bezier control points, i.e. it is conservative: nothing gets clipped.
+
+Framing, and why the size is 78x31
+----------------------------------
+The box is the complete badge at aspect 2.5026, which matches the official
+127x51 raster (2.490) to within 0.7%. The official 88x31 button is NOT this
+framing (2.839) — it is a wider, shorter crop of the same artwork — so do not
+expect the two to overlay. index.astro renders the badge at a height of 31px to
+match the row it sits in, which makes it 77.58px wide, hence width="78".
+
+Deliberately the plain GPLv3 badge, NOT the "or later" one from the same page:
+gplv3-or-later.svg reads "OR LATER" and would misstate GPL-3.0-only.
