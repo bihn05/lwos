@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL } from "../data/site";
+import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LICENSE_URL } from "../data/site";
 ---
 
 <SiteLayout title="LWOS" windowTitle="LWOS Home Page - Microsoft Internet Explorer">
@@ -97,10 +97,10 @@ make run</pre></div>
 
 <hr class="rb">
 
-<p class="btns"><img src="/assets/gif/btn-lwos.gif" width="88" height="31" alt="LWOS now!"><img src="/assets/gif/btn-bochs.gif" width="88" height="31" alt="Best viewed in Bochs"><img src="/assets/gif/btn-nobios.gif" width="88" height="31" alt="BIOS-free"><img src="/assets/gif/btn-make.gif" width="88" height="31" alt="Powered by make run"><img src="/assets/gif/btn-x86.gif" width="88" height="31" alt="x86 32-bit protected mode"></p>
+<p class="btns"><img src="/assets/gif/btn-lwos.gif" width="88" height="31" alt="LWOS now!"><img src="/assets/gif/btn-bochs.gif" width="88" height="31" alt="Best viewed in Bochs"><img src="/assets/gif/btn-nobios.gif" width="88" height="31" alt="BIOS-free"><img src="/assets/gif/btn-make.gif" width="88" height="31" alt="Powered by make run"><img src="/assets/gif/btn-x86.gif" width="88" height="31" alt="x86 32-bit protected mode"><a class="lic" href={LICENSE_URL} title="GNU General Public License v3.0 (GPL-3.0-only) — read the license"><img src="/assets/img/gplv3-88x31.png" width="88" height="31" alt="GNU GPL v3 — Free Software"></a></p>
 
 <p class="foot">
   <img class="wmimg" src="/assets/img/wordmark-mini.png" width="147" height="45" alt="LWOS">
-  <br><br>Copyleft 2026 &middot; Page by <a href={AUTHOR_URL}>@{AUTHOR}</a> &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
+  <br><br>Copyleft 2026 &middot; <a href={LICENSE_URL}>GPL-3.0-only</a> &middot; Page by <a href={AUTHOR_URL}>@{AUTHOR}</a> &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
 </p>
 </SiteLayout>

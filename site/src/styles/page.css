@@ -119,6 +119,9 @@ hr.rb{height:6px;border:0;background:url("/assets/gif/divider.gif") repeat-x;ima
 .crt figcaption{font:italic 13px var(--serif);margin-top:4px}
 .btns{display:flex;flex-wrap:wrap;gap:6px;max-width:none}
 .btns img{image-rendering:pixelated}
+/* the GPL button is wrapped in a link; without this the anchor's line box
+   makes the row 4px taller and the logo sits low */
+.btns .lic{display:block;line-height:0}
 .wmimg{image-rendering:pixelated;display:block;max-width:100%;height:auto}
 .wmbox{display:inline-block;border:3px solid var(--blue);background:#fff;padding:4px;max-width:100%}
 .page.fs-l{font-size:19px}

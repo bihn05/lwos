@@ -119,7 +119,7 @@
       case 'refresh':refresh();break;
       case 'back':back();break;
       case 'fwd':fwd();break;
-      case 'about':dialog('About LWOS','<b>LWOS v2</b><br>A hobby OS for CNC milling machines.<br>Flat 32-bit protected mode. No BIOS, no paging.<br><br>Copyleft 2026<br>https://lwos.dev');break;
+      case 'about':dialog('About LWOS','<b>LWOS v2</b><br>A hobby OS for CNC milling machines.<br>Flat 32-bit protected mode. No BIOS, no paging.<br><br>Copyleft 2026 &middot; GPL-3.0-only<br>https://lwos.dev');break;
     }
   });
   document.addEventListener('click',function(e){

@@ -1,0 +1,21 @@
+GPLv3 logo, 88x31 — public/assets/img/gplv3-88x31.png
+
+Source:     https://www.gnu.org/graphics/license-logos.html
+File:       https://www.gnu.org/graphics/gplv3-88x31.png
+Downloaded: 2026-10-01
+sha256:     3bd7654100b5dc453358000210ae28f5a99e9c8794e0d561e1c37c1729c069ed
+
+Per the "Copyright and license" section of that page, the official GPL, AGPL
+and LGPL logos are in the public domain, and the page says outright:
+
+    If you are releasing work under ... version 3 of the GNU GPL, LGPL, or
+    AGPL, feel free to use these buttons on your site or in your application
+    to advertise the license.
+
+This project is GPL-3.0-only, so this is the plain GPLv3 button. Do NOT swap in
+gplv3-or-later-sm.png from the same page: that one reads "OR LATER" and would
+misstate the license.
+
+The file is a verbatim copy of the official artwork — no recolouring, no
+re-encoding. It has an alpha channel, so the page background shows through the
+corners; that is how the original is built, not an artefact of this repo.
