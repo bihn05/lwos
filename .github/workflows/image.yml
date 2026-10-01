@@ -1,0 +1,66 @@
+# 在线试玩的镜像供应链: push 到 main 就重新构建 lwcnc.img, gzip 后覆盖挂到
+# 固定 tag 的 GitHub Release 上 (滚动更新). 站点的 demo 页从
+# https://github.com/LWOS-dev/lwos/releases/download/latest-image/lwcnc.img.gz
+# 匿名拉取, URL 永远不变, 内容永远是最新构建.
+# 镜像不进仓库: 完整镜像 64 MiB, gzip 后 ~80 KB, 放 Release 正合适.
+name: boot image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同一时间只跑一个, 免得两个构建互相覆盖 Release 资产
+concurrency:
+  group: boot-image
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: latest-image
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-multilib nasm
+
+      - name: Build image
+        run: make -j"$(nproc)" webimg
+
+      - name: Write build info
+        run: |
+          {
+            printf '{\n'
+            printf '  "commit": "%s",\n' "$GITHUB_SHA"
+            printf '  "date": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            printf '  "run": "%s",\n' "$GITHUB_RUN_ID"
+            printf '  "size": %s\n' "$(stat -c %s site/public/assets/demo/lwcnc.img.gz)"
+            printf '}\n'
+          } > site/public/assets/demo/build-info.json
+
+      - name: Publish to rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ASSETS=(site/public/assets/demo/lwcnc.img.gz site/public/assets/demo/build-info.json)
+          NOTES=$'自动构建的 LWOS 启动镜像, push 到 main 时滚动覆盖, 不要在这里留言。
+
+          - `lwcnc.img.gz` — 完整 64 MiB 磁盘镜像的 gzip ('"${GITHUB_SHA::7}"$')
+          - `build-info.json` — 构建元数据
+
+          在线试玩页 (lwos.dev/demo/) 直接匿名拉取这里的文件。'
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "${ASSETS[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes "$NOTES" --latest
+          else
+            gh release create "$TAG" "${ASSETS[@]}" --repo "$GITHUB_REPOSITORY" \
+              --title "LWOS boot image (rolling)" --notes "$NOTES" --latest
+          fi

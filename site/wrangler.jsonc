@@ -3,10 +3,13 @@
   "name": "lwos-site",
   "compatibility_date": "2026-10-01",
 
-  // 纯静态资源的 Worker: 没有 main 脚本, Cloudflare 只负责把 dist/ 发出去。
-  // 静态资源的请求是免费且不限量的。
+  // 静态资源 + 一条 /demo-image 代理路由 (worker.js): 匹配到 dist/ 静态资源
+  // 的请求 Cloudflare 直发, 免费不限量, 不进脚本; 只有 demo 页拉镜像的那
+  // 一条 /demo-image* 请求会跑脚本, 走普通 Worker 额度。
+  "main": "worker.js",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
 
     // 匹配不到文件时用 dist/404.html 回应。
     "not_found_handling": "404-page"

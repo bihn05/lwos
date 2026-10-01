@@ -83,10 +83,22 @@ resetimg:
 run: $(IMG)
 	bochs -f bochsrc -q
 
+# ---------------------------------------------------------------- 在线试玩
+# 镜像不进仓库: CI 每次 push 到 main 会 make webimg 然后把产物覆盖挂到
+# 固定 tag 的 GitHub Release 上 (滚动更新), demo 页从那里匿名拉取.
+# 这个目标只用于本地调试 site/ 的 demo 页, 输出目录在 .gitignore 里.
+DEMO_IMG_GZ	= site/public/assets/demo/lwcnc.img.gz
+
+$(DEMO_IMG_GZ): $(IMG)
+	@mkdir -p $(@D)
+	gzip -9 -c $(IMG) > $@
+
+webimg: $(DEMO_IMG_GZ)
+
 clean:
-	rm -f $(MKFAT) $(IMG)
+	rm -f $(MKFAT) $(IMG) $(DEMO_IMG_GZ)
 	rm -rf $(BUILD_DIR) $(BIN_DIR) $(FSROOT)
 
-.PHONY: all resetimg run clean fsroot
+.PHONY: all resetimg run clean fsroot webimg
 
 -include $(shell find $(BUILD_DIR) -name '*.d' 2>/dev/null)

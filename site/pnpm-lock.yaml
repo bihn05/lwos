@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      v86:
+        specifier: ^0.5.465
+        version: 0.5.465
     devDependencies:
       astro:
         specifier: ^7.3.5
@@ -1747,6 +1751,9 @@ packages:
       uploadthing:
         optional: true
 
+  v86@0.5.465:
+    resolution: {integrity: sha512-rMbIXL73ZaES+P90D2G78rGmEPsGbqdOoR3vMaux1OIH3m2Shjn/eZW8zczBNBYvC7LIZi2DIkOV+C8pH7dVZg==}
+
   verkit@0.4.1:
     resolution: {integrity: sha512-mMVzj0TXExtVdlDEq+Mzp0eyOuyznNpFobNM3uAqe3HVm/Ps2c+u17BligMkZjZCA6EiXpoon8iRTer3iu40SQ==}
     engines: {node: '>=18.12.0'}
@@ -3363,6 +3370,8 @@ snapshots:
       node-fetch-native: 1.6.7
       ofetch: 1.5.1
       ufo: 1.6.4
+
+  v86@0.5.465: {}
 
   verkit@0.4.1: {}
 

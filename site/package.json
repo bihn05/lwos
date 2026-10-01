@@ -18,5 +18,8 @@
       "esbuild",
       "workerd"
     ]
+  },
+  "dependencies": {
+    "v86": "^0.5.465"
   }
 }

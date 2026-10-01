@@ -92,16 +92,39 @@ viewBox。改了哪三处、公有领域声明、设计者和上游 sha256 都�
 用 Astro 的内容集合 (content collections) 就行。导航要变的话给 SiteLayout
 传 `sections` 和 `path`, 外壳本身不用动。
 
-**在线试玩** — 现在卡在体积上。`lwcnc.img` 是 131040 × 512 = **64 MiB**,
-而 Cloudflare 单个静态资源文件的上限是 **25 MiB**, 直接传不上去。可选:
+**在线试玩** — 已做成 (2026-10-02, `site-demo` 分支起家):
 
-- gzip 之后当静态资源发布, 前端用 `DecompressionStream` 解压再喂给 v86
-  (FAT 镜像大片是零, 压缩率会很高)
-- 放 R2, 用 Worker 绑定绕开 25 MiB 限制
-- 专门做一个精简镜像
-
-另外 **还没有实测过 LWOS 的 MBR 在 v86 (SeaBIOS) 下能不能正常接管引导**,
-这个得真跑一次才知道, 不能想当然。
+- **镜像不进仓库**。`.github/workflows/image.yml` 每次 push 到 main 重新
+  `make webimg`, 把 gzip 镜像 (64 MiB 压到 ~80 KB, FAT 大片是零) 和
+  `build-info.json` 覆盖挂到固定 tag `latest-image` 的 Release 上 —— URL
+  永远不变, 匿名可拉, 滚动更新。
+- **首页的开机入口**: 主页 "What is LWOS?" 里的 boot.gif 是海报 (街机吸引
+  画面), 上面浮一个 POWER ON 按钮, 点击后才动态 `import("./vm.js")` 把
+  GIF 原地换成真机 —— v86 连 wasm 有 2.4 MB, 首页首屏 JS 只有 4 KB,
+  chunk 平时不拉。共享逻辑在 `src/scripts/vm.js` (fetch 镜像 + 解压 +
+  startVM + 键盘门控), demo 页和首页都走它。
+- **Release 资产没有 CORS 头** (release-assets.githubusercontent.com 不回
+  `Access-Control-Allow-Origin`), 浏览器直拉会被拦, 所以 `worker.js` 提供
+  `/demo-image` 和 `/demo-image-info` 两条同源代理路由, 边缘缓存 5 分钟。
+  wrangler 配置加了 `main`, 但匹配到静态资源的请求仍然直发不进脚本。
+- demo 页 (`src/pages/demo.astro`) 用 `DecompressionStream` 解压后把 64 MiB
+  buffer 喂给 v86 当 IDE 硬盘。v86 走 npm 包, wasm 由 Vite `?url` 打包;
+  BIOS (npm 包不带) vendored 在 `public/vendor/v86/bios/`, `.gitignore`
+  里有对应的 `!` 反排除规则。
+- 本地调试: `make webimg` 生成 `site/public/assets/demo/lwcnc.img.gz`
+  (gitignored), `pnpm dev` 然后开 `/demo/?img=/assets/demo/lwcnc.img.gz`。
+  astro dev 对 .gz 会加 `Content-Encoding: gzip`, 浏览器自动解压一层,
+  demo 页检测到 content-encoding 后会跳过手动解压, 两种来源都能吃。
+- **已实测** (v86 0.5.465, SeaBIOS): LWOS 的 MBR → STAGE2 → LOADER (自带
+  FAT32/ATA 驱动) → MONITOR v2 全链路正常引导, 8042 键盘探测 PASS,
+  monitor 命令可交互。已知边界:
+  ① demo 页用 `use_graphical_text` (canvas + VGA 字模) 渲染文本模式,
+  比 DOM 文本渲染器更接近真机;
+  ② monitor 的退格只回移输入下标, 屏幕不擦、缓冲里已删的字符仍会进命令
+  (LWOS 侧的问题, type abc → 退格×3 → `h` 回车 → 执行的是 `hbc`);
+  ③ 暖重启 (v86 restart) 后 guest 键盘不再响应, 冷启动正常,
+  所以 Reset 按钮用整页刷新代替;
+  ④ v86 不支持 task gates 和保护模式 far call, P7 做 TSS 任务切换时再评估。
 
 **为什么 CSS 是两个文件** — `chrome.css` 是窗口外壳, `page.css` 是文档本体。
 Astro 构建时会把它们合并成一个 CSS 文件, 所以运行时没有区别; 拆开纯粹是为了

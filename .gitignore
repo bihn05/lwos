@@ -18,4 +18,12 @@ site/dist/
 site/.astro/
 .pnpm-store/
 
+# 在线试玩: 镜像不进仓库 —— CI 每次把最新构建挂到固定 tag 的 GitHub Release
+# 上滚动覆盖, demo 页从那里匿名拉取. make webimg 只写本地调试用的那份.
+site/public/assets/demo/
+
+# v86 的两个 BIOS 文件是特意 vendored 的 (npm 包不带 BIOS), 别被上面的 *.bin 挡掉
+!site/public/vendor/v86/bios/seabios.bin
+!site/public/vendor/v86/bios/vgabios.bin
+
 # SPEC/ and report/ are tracked on purpose — do not ignore

@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LICENSE_URL } from "../data/site";
+import { REPO, SPECS, REPORT, DEVLOG, WIKI, DEMO, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LICENSE_URL } from "../data/site";
 ---
 
 <SiteLayout title="LWOS" windowTitle="LWOS Home Page - Microsoft Internet Explorer">
@@ -54,6 +54,7 @@ import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LIC
   <li><a href="#memory">Flat memory, hardware tasks</a></li>
   <li><a href="#works">What works today</a></li>
   <li><a href="#build">Build &amp; run</a></li>
+  <li><a href={DEMO}>Run it in your browser</a> <img src="/assets/gif/new.gif" width="40" height="16" alt="NEW!" style="vertical-align:middle"></li>
   <li><a href={WIKI}>Wiki</a></li>
   <li><a href={SPECS}>Specs</a></li>
   <li><a href={DEVLOG}>Dev log</a></li>
@@ -70,7 +71,26 @@ import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LIC
 
 <h2 id="about"><img src="/assets/gif/spin.gif" alt="">What is LWOS?</h2>
 <p>A hobby operating system for CNC milling machines. It looks and feels like an IBM PC, but it doesn't depend on the BIOS.</p>
-<figure class="crt"><img src="/assets/gif/boot.gif" width="640" height="288" alt="LWOS loader reading FAT32, then the MONITOR prompt"><figcaption>From power-on to the MONITOR prompt (illustration)</figcaption></figure>
+<figure class="crt" id="bootdemo">
+  <button class="boot-poster" id="boot-poster" title="Power on — boot the real system right here">
+    <img src="/assets/gif/boot.gif" width="640" height="288" alt="LWOS loader reading FAT32, then the MONITOR prompt. Click to boot the real system in your browser.">
+    <span class="boot-overlay"><b>&#9654; POWER ON</b><small>boot the real thing right here</small></span>
+  </button>
+  <div class="demo-shell" id="boot-shell" hidden>
+    <div class="demo-bezel">
+      <div id="bootscreen" class="demo-screen" tabindex="0" aria-label="Emulated VGA screen; click here, then type">
+        <div id="bootscreen-text"></div>
+        <canvas id="bootscreen-canvas" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="demo-btns">
+      <button class="btn95" id="boot-fullscreen" disabled>Fullscreen</button>
+      <button class="btn95" id="boot-cad" disabled>Ctrl+Alt+Del</button>
+      <a class="btn95" href={DEMO}>Full demo page&hellip;</a>
+    </div>
+  </div>
+  <figcaption id="boot-cap">From power-on to the MONITOR prompt (recording) &mdash; click to power on the real thing.</figcaption>
+</figure>
 <p class="ucrow"><img src="/assets/gif/construction.gif" width="140" height="44" alt="Under construction"><span><b>UNDER CONSTRUCTION</b><br>v2 is an early rewrite. APIs and layout may change without notice.</span></p>
 
 <hr>
@@ -96,7 +116,7 @@ import { REPO, SPECS, REPORT, DEVLOG, WIKI, BOCHS, QEMU, AUTHOR, AUTHOR_URL, LIC
 <div class="scroll-x"><pre>git clone {REPO}
 cd lwos
 make run</pre></div>
-<p><a class="btn95" href={REPO}>Get the source...</a> <a class="btn95" href={WIKI}>Read the wiki</a></p>
+<p><a class="btn95" href={DEMO}><b>Try it online</b> — boot it in your browser</a> <a class="btn95" href={REPO}>Get the source...</a> <a class="btn95" href={WIKI}>Read the wiki</a></p>
 
 <hr class="rb">
 
@@ -107,3 +127,7 @@ make run</pre></div>
   <br><br>Copyleft 2026 &middot; <a href={LICENSE_URL}>GPL-3.0-only</a> &middot; Page by <a href={AUTHOR_URL}>@{AUTHOR}</a> &middot; Best viewed at 800&times;600, 256 colors &middot; <a href="#top">Back to top</a>
 </p>
 </SiteLayout>
+
+<script>
+  import "../scripts/boot-inline.js";
+</script>

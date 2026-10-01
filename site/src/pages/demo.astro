@@ -1,0 +1,59 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { ORIGIN, IMAGE_GZ_URL } from "../data/site";
+---
+
+<SiteLayout
+  title="LWOS online demo"
+  windowTitle="LWOS Online Demo - Microsoft Internet Explorer"
+  path={`${ORIGIN}/demo/`}
+  sections={[]}
+>
+
+<h2><img src="/assets/gif/spin.gif" alt="">Run LWOS in your browser</h2>
+<p>This is the real system, not a screencast: the machine below is
+<a href="https://copy.sh/v86/">v86</a>, a whole IBM-PC-compatible computer
+emulated in WebAssembly. It downloads the boot image that CI attaches to a
+<a href={IMAGE_GZ_URL}>rolling GitHub release</a> (rebuilt on every push to
+<code>main</code>), unpacks it in your browser and boots it.</p>
+
+<figure class="crt">
+  <div class="demo-shell">
+    <div class="demo-bezel">
+      <div id="screen" class="demo-screen" tabindex="0" aria-label="Emulated VGA screen; click here, then type">
+        <div id="screen-text"></div>
+        <canvas id="screen-canvas" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="demo-btns">
+      <button class="btn95" id="demo-restart" disabled>Reset</button>
+      <button class="btn95" id="demo-fullscreen" disabled>Fullscreen</button>
+      <button class="btn95" id="demo-cad" disabled>Ctrl+Alt+Del</button>
+    </div>
+  </div>
+  <figcaption id="demo-build">image: latest CI build from GitHub Releases</figcaption>
+</figure>
+
+<p><b>Keyboard:</b> click the black screen once, then type &mdash; the emulator
+keeps the keys from then on. Click outside or press <kbd>Esc</kbd> to give them
+back to the page.</p>
+
+<hr>
+
+<h2>How it works</h2>
+<p>Every push to <code>main</code> makes CI rebuild the image and overwrite
+the same release asset, so the machine always boots the latest build.</p>
+
+<hr>
+
+<h2>Credits</h2>
+<ul class="links plain">
+  <li><a href="https://github.com/copy/v86">v86</a> &mdash; x86 emulator in WebAssembly, BSD-2-Clause (<a href="/vendor/v86/LICENSE-v86">license</a>)</li>
+  <li><a href="https://github.com/qemu/seabios">SeaBIOS</a> and <a href="https://www.nongnu.org/vgabios/">VGABIOS</a> &mdash; the BIOS images v86 boots with, LGPL</li>
+</ul>
+
+</SiteLayout>
+
+<script>
+  import "../scripts/demo.js";
+</script>
