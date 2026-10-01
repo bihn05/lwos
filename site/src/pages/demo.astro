@@ -17,12 +17,13 @@ emulated in WebAssembly. It downloads the boot image that CI attaches to a
 <a href={IMAGE_GZ_URL}>rolling GitHub release</a> (rebuilt on every push to
 <code>main</code>), unpacks it in your browser and boots it.</p>
 
-<figure class="crt">
+<figure class="crt demo-fig">
   <div class="demo-shell">
     <div class="demo-bezel">
       <div id="screen" class="demo-screen" tabindex="0" aria-label="Emulated VGA screen; click here, then type">
         <div id="screen-text"></div>
         <canvas id="screen-canvas" style="display:none"></canvas>
+        <input class="phone_keyboard" spellcheck="false" autocomplete="off" autocapitalize="none" aria-hidden="true" tabindex="-1">
       </div>
     </div>
     <div class="demo-btns">

@@ -143,6 +143,9 @@ button.boot-poster{display:block;position:relative;cursor:pointer;background:non
 .boot-poster:hover .boot-overlay,.boot-poster:focus-visible .boot-overlay{background:var(--navy);color:#fff;border-color:var(--hi) var(--navy) var(--navy) var(--hi)}
 .boot-poster:hover .boot-overlay small{color:#c8d4ff}
 .boot-poster:disabled{cursor:wait}
+/* demo 页和首页开机框: .crt 的 width:max-content 会让整条链按文本自然宽度
+   收缩 (字体回退时 80 列只有 ~292px), 手机上"离奇的小"就是它; 强制撑满 */
+.demo-fig{width:100%}
 .demo-shell{max-width:720px;margin:0 auto;border:3px solid var(--blue);background:#fff;padding:10px 12px}
 .demo-bezel{background:#2a2a2a;border-radius:6px;box-shadow:0 0 0 2px #000;padding:10px}
 /* 屏幕固定成文本模式的 600x450 (4:3): guest 里切 VBE 图形模式时 canvas 在
@@ -150,7 +153,12 @@ button.boot-poster{display:block;position:relative;cursor:pointer;background:non
    user-select:none —— 这块是虚拟机显示器不是文档, 选中它里面的文字只会
    留下悬空的灰色选区块 (guest 一滚动选区锚点就错位); :focus-visible 的
    描边同理去掉 —— 敲过键盘再点屏幕时 Chromium 会命中它, 凭空多一圈灰边. */
-.demo-screen{display:grid;place-items:center;margin:0 auto;width:min(600px,100%);aspect-ratio:4/3;background:#000;overflow:hidden;outline:none;cursor:default;user-select:none;-webkit-user-select:none}
+.demo-screen{display:grid;place-items:center;margin:0 auto;width:min(600px,100%);aspect-ratio:4/3;background:#000;overflow:hidden;outline:none;cursor:default;user-select:none;-webkit-user-select:none;position:relative}
+/* 软键盘宿主: 点屏幕时聚焦它 (手机上拉起输入法), 本体隐形 */
+.phone_keyboard{position:absolute;left:0;bottom:0;width:1px;height:1px;opacity:0;border:0;padding:0;pointer-events:none}
+/* 全屏: 全屏对象是 bezel, 屏幕在纯黑里按 4:3 尽量放大 */
+.demo-bezel:fullscreen,.demo-bezel:-webkit-full-screen{display:grid;place-items:center;background:#000;border-radius:0;padding:0}
+.demo-bezel:fullscreen .demo-screen,.demo-bezel:-webkit-full-screen .demo-screen{width:min(100vw,133.33vh)}
 .demo-screen>div{white-space:pre;font:15px/1.2 var(--mono);color:#c8c8c8}
 /* canvas 撑满 4:3 框: VGA 文本模式原生 720x400, 真机本来就是非方像素
    拉伸到 4:3 显示的; 640x480/800x600 等 4:3 图形模式刚好无损填满 */
@@ -159,6 +167,7 @@ button.boot-poster{display:block;position:relative;cursor:pointer;background:non
 .demo-btns .btn95:disabled{color:var(--lo);text-shadow:1px 1px 0 var(--hi)}
 @media (max-width:720px){
   .demo-shell{padding:8px}
+  .demo-bezel{padding:6px}
   .demo-screen>div{font-size:12px}
 }
 

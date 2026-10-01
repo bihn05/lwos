@@ -58,10 +58,35 @@ export function startVM(container, buffer) {
   });
   window.__emu = emulator; // 调试用
 
-  // v86 默认把整页的按键都截给虚拟机, 这里只让屏幕拿到焦点时才送键,
-  // 地址栏和 IE 外壳的快捷键才能正常工作.
+  // v86 默认把整页的按键都截给虚拟机, 这里只让屏幕区域拿到焦点时才送键
+  // (focusin 会从隐形 input 冒泡上来), 地址栏和 IE 外壳的快捷键才能正常工作.
   emulator.keyboard_set_enabled(false);
-  container.addEventListener("focus", () => emulator.keyboard_set_enabled(true));
-  container.addEventListener("blur", () => emulator.keyboard_set_enabled(false));
+  container.addEventListener("focusin", () => emulator.keyboard_set_enabled(true));
+  container.addEventListener("focusout", () => emulator.keyboard_set_enabled(false));
+
+  // 移动端软键盘: 屏幕是 div, 点它拉不起键盘, 得聚焦一个隐形 input.
+  // v86 在 window 上监听 input 事件并按 inputType 转按键 (insertText ->
+  // simulate_char, deleteContentBackward -> 退格, insertLineBreak -> 回车),
+  // 前提是事件目标带 phone_keyboard class 且门控开着 —— 我们只负责清空 value.
+  const pk = container.querySelector(".phone_keyboard");
+  if (pk) {
+    container.addEventListener("click", () => pk.focus({ preventScroll: true }));
+    pk.addEventListener("input", () => { pk.value = "" });
+  }
   return emulator;
+}
+
+/* 全屏: v86 自带的 screen_go_fullscreen 写死了 getElementById("screen_container"),
+   对我们的容器直接拿到 null, 所以自己实现. 全屏对象是 bezel (保留 CRT 黑框).
+   iPhone 的 Safari 不给 div 提供 requestFullscreen, 返回 false 由调用方处理. */
+export function goFullscreen(container) {
+  const req = container.requestFullscreen || container.webkitRequestFullscreen;
+  if (!req) return false;
+  const p = req.call(container);
+  if (p && p.catch) p.catch(() => {});
+  // Chrome 的 Keyboard Lock: 全屏下 Esc 归虚拟机用
+  try { if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock().catch(() => {}) } catch (e) {}
+  const pk = container.querySelector(".phone_keyboard");
+  if (pk) pk.focus({ preventScroll: true });
+  return true;
 }

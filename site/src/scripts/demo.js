@@ -2,7 +2,7 @@
    本地调试 (astro dev 没有 Worker 路由):
      pnpm dev  然后开  /demo/?img=/assets/demo/lwcnc.img.gz
      那份文件来自 make webimg, 在 .gitignore 里, 不进仓库. */
-import { resolveImageUrl, fetchImage, startVM } from "./vm.js";
+import { resolveImageUrl, fetchImage, startVM, goFullscreen } from "./vm.js";
 import { DEMO_INFO_PROXY, IMAGE_GZ_URL } from "../data/site";
 
 var $ = function (id) { return document.getElementById(id) };
@@ -24,14 +24,18 @@ fetchImage(resolveImageUrl()).then(function (buffer) {
   const emulator = startVM($("screen"), buffer);
   emulator.add_listener("emulator-ready", function () {
     $("demo-restart").disabled = false;
-    $("demo-fullscreen").disabled = false;
+    // iPhone 的 Safari 不给 div 提供 requestFullscreen, 环境不支持就别点亮
+    if (document.fullscreenEnabled || document.webkitFullscreenEnabled)
+      $("demo-fullscreen").disabled = false;
     $("demo-cad").disabled = false;
   });
 
   // 暖重启 (emulator.restart()) 之后 LWOS 在 v86 下键盘不再响应输入,
   // 冷启动没这个问题 —— 所以 Reset 用整页刷新, 顺带拉一次最新镜像
   $("demo-restart").onclick = function () { location.reload() };
-  $("demo-fullscreen").onclick = function () { emulator.screen_go_fullscreen() };
+  $("demo-fullscreen").onclick = function () {
+    goFullscreen(document.querySelector(".demo-bezel"));
+  };
   // Ctrl+Alt+Del 的 make/break 扫描码
   $("demo-cad").onclick = function () {
     emulator.keyboard_send_scancodes([0x1D, 0x38, 0x53, 0xD3, 0xB8, 0xDD]);

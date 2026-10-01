@@ -71,7 +71,7 @@ import { REPO, SPECS, REPORT, DEVLOG, WIKI, DEMO, BOCHS, QEMU, AUTHOR, AUTHOR_UR
 
 <h2 id="about"><img src="/assets/gif/spin.gif" alt="">What is LWOS?</h2>
 <p>A hobby operating system for CNC milling machines. It looks and feels like an IBM PC, but it doesn't depend on the BIOS.</p>
-<figure class="crt" id="bootdemo">
+<figure class="crt demo-fig" id="bootdemo">
   <button class="boot-poster" id="boot-poster" title="Power on — boot the real system right here">
     <img src="/assets/gif/boot.gif" width="640" height="288" alt="LWOS loader reading FAT32, then the MONITOR prompt. Click to boot the real system in your browser.">
     <span class="boot-overlay"><b>&#9654; POWER ON</b><small>boot the real thing right here</small></span>
@@ -81,6 +81,7 @@ import { REPO, SPECS, REPORT, DEVLOG, WIKI, DEMO, BOCHS, QEMU, AUTHOR, AUTHOR_UR
       <div id="bootscreen" class="demo-screen" tabindex="0" aria-label="Emulated VGA screen; click here, then type">
         <div id="bootscreen-text"></div>
         <canvas id="bootscreen-canvas" style="display:none"></canvas>
+        <input class="phone_keyboard" spellcheck="false" autocomplete="off" autocapitalize="none" aria-hidden="true" tabindex="-1">
       </div>
     </div>
     <div class="demo-btns">

@@ -41,7 +41,8 @@ if (poster) {
       }
       var emulator = vm.startVM($("bootscreen"), buffer);
       emulator.add_listener("emulator-ready", function () {
-        $("boot-fullscreen").disabled = false;
+        if (document.fullscreenEnabled || document.webkitFullscreenEnabled)
+          $("boot-fullscreen").disabled = false;
         $("boot-cad").disabled = false;
         cap.textContent = "LIVE — the real system, running the latest CI image. ";
         var a = document.createElement("a");
@@ -49,7 +50,9 @@ if (poster) {
         a.textContent = "Open the full demo page";
         cap.appendChild(a);
       });
-      $("boot-fullscreen").onclick = function () { emulator.screen_go_fullscreen() };
+      $("boot-fullscreen").onclick = function () {
+        vm.goFullscreen(document.querySelector("#bootdemo .demo-bezel"));
+      };
       // Ctrl+Alt+Del 的 make/break 扫描码
       $("boot-cad").onclick = function () {
         emulator.keyboard_send_scancodes([0x1D, 0x38, 0x53, 0xD3, 0xB8, 0xDD]);
