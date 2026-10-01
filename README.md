@@ -1,6 +1,12 @@
+<p align=left>
+  <a href="https://lwos.dev/">
+    <img alt="LWOS" src="https://lwos.dev/assets/img/wordmark.png" width="80%">
+  </a>
+</p>
+
 # LWOS
 
-**所有的内容都是手工编写的...**
+**所有的实现都是手工编写的...**
 
 一个面向CNC (计算机数控) 铣削设备的业余操作系统，外观和操作感受受到 IBM-PC 启发。
 注意：LWOS在风格上类似IBM-PC，但是不依赖BIOS。固件支持（自定义BIOS、IBM兼容机）属于另一个独立项目，不是本项目范围内的。
