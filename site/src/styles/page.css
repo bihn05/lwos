@@ -166,8 +166,12 @@ button.boot-poster{display:block;position:relative;cursor:pointer;background:non
 .demo-btns{display:flex;gap:6px;margin-top:8px}
 .demo-btns .btn95:disabled{color:var(--lo);text-shadow:1px 1px 0 var(--hi)}
 @media (max-width:720px){
-  .demo-shell{padding:8px}
-  .demo-bezel{padding:6px}
+  /* 手机: demo 全出血铺到页面边缘, 盒子改成近似正方形充分利用竖屏高度,
+     canvas 铺满 —— 字大一号, 高分屏放大也清晰, 牺牲一点纵横比 */
+  .demo-fig{margin-left:-12px;margin-right:-12px}
+  .demo-shell{padding:6px}
+  .demo-bezel{padding:4px}
+  .demo-screen{aspect-ratio:1/1}
   .demo-screen>div{font-size:12px}
 }
 
