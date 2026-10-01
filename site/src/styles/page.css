@@ -38,7 +38,10 @@
 .globe .orb::before{content:"";position:absolute;left:8px;top:9px;width:14px;height:18px;border-radius:40% 60% 50% 50%;background:#2a9a3a}
 .globe .orb::after{content:"";position:absolute;left:24px;top:14px;width:10px;height:10px;border-radius:50%;background:#2a9a3a}
 .globe span{background:linear-gradient(#fff,#bbb);border:1px solid #000;padding:2px 6px;box-shadow:2px 2px 0 #444}
-.bottom-row{grid-column:1/-1;display:grid;grid-template-columns:150px 1fr 170px;gap:14px;align-items:center}
+.bottom-row{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr 170px;gap:14px;align-items:center}
+/* bochs. and the GPL badge share the left cell: a 150px column holding bochs.
+   alone (it is only ~101px wide) left a ~63px hole before the badge */
+.bochs-row{display:flex;align-items:center;gap:8px}
 .bochs{font:bold 30px/1 "Arial Black",Arial,sans-serif;letter-spacing:-.04em;text-decoration:none;color:#000}
 .bochs i{color:var(--red);font-style:normal}
 .cool{display:block;text-align:center;border-radius:999px;padding:3px 10px;border:1px solid #666;
@@ -109,6 +112,7 @@ table.t95 tr.now td{background:#ffffc0}
   .tag.two{left:calc(50% + 30px);top:52px}
   .dash{display:none}
   .bochs{text-align:center}
+  .bochs-row{justify-content:center}
   .wm.lg .word{font-size:36px}
 }
 hr.rb{height:6px;border:0;background:url("/assets/gif/divider.gif") repeat-x;image-rendering:pixelated}
@@ -119,6 +123,11 @@ hr.rb{height:6px;border:0;background:url("/assets/gif/divider.gif") repeat-x;ima
 .crt figcaption{font:italic 13px var(--serif);margin-top:4px}
 .btns{display:flex;flex-wrap:wrap;gap:6px;max-width:none}
 .btns img{image-rendering:pixelated}
+/* the GPL badge: a link, so kill the anchor's line box or it sits low and adds
+   4px to the row. Deliberately no image-rendering:pixelated — it is the official
+   anti-aliased artwork sitting next to bochs. (which is 30px Arial Black), not
+   in the hand-drawn GIF collage further down the page. */
+.lic{display:block;line-height:0}
 .wmimg{image-rendering:pixelated;display:block;max-width:100%;height:auto}
 .wmbox{display:inline-block;border:3px solid var(--blue);background:#fff;padding:4px;max-width:100%}
 .page.fs-l{font-size:19px}

@@ -56,6 +56,14 @@ Go 菜单和地址栏的补全列表都由同一个 `homeSections` 生成, 不�
 > 图片对不上 (肉眼看不出差别, 但 sha256 变了)。所以 **别因为顺手跑了一遍脚本
 > 就把这些图片的改动提交上去**, 除非你确实想要新图。
 
+`public/assets/img/gplv3-badge.svg` 是 **FSF 官方的 GPLv3 徽章**, 不是上面这些脚本
+生成的 —— 别去 `tools/` 里找它。官方那份 (gpl-v3-logo.svg) 是一张 A4 画布, 里面
+**红黑两套** lockup 加一行 "Free as in Freedom", 所以裁过: 只留红色徽章本体, 加了
+viewBox。改了哪三处、公有领域声明、设计者和上游 sha256 都记在
+`public/assets/img/LICENSE-gplv3-badge.txt`。用矢量是因为它在高分屏上不糊; 高度按
+31px 渲染, 宽度因此是 78px —— 官方那个 88x31 的 PNG 是**另一种取景**, 两者不会重合。
+这个徽章是 banner 底部那排里唯一的链接 (指向仓库根目录的 `LICENSE`)。
+
 ## 部署 (Cloudflare Workers)
 
 `lwos.dev` 已经托管在 Cloudflare 上 (NS 是 kelly/todd.ns.cloudflare.com),

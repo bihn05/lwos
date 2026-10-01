@@ -11,6 +11,7 @@ export const SPECS = `${REPO}/tree/main/spec2`;
 export const REPORT = `${REPO}/tree/main/report`;
 export const ROADMAP = `${REPO}/blob/main/spec2/90-roadmap.md`;
 export const DEVLOG = `${REPO}/blob/main/spec2/99-log.md`;
+export const LICENSE_URL = `${REPO}/blob/main/LICENSE`;
 export const WIKI = `${ORIGIN}/wiki/`;
 export const BOCHS = "https://bochs.sourceforge.io/";
 export const QEMU = "https://www.qemu.org/";

@@ -47,3 +47,15 @@
 
 ```sh
 make run
+```
+
+## 许可证
+
+本项目以 **GNU General Public License v3.0**（`GPL-3.0-only`，仅第 3 版）发布，完整条款见 [LICENSE](LICENSE)——该文件是 gnu.org 官方文本的逐字节副本，未做任何改动，版权声明因此写在这里。
+
+    Copyright (C) 2026 LWOS-dev
+
+    本程序是自由软件：你可以依据自由软件基金会发布的 GNU 通用公共许可证第 3 版
+    重新分发和/或修改它。本程序按"原样"分发，不提供任何担保。
+
+    SPDX-License-Identifier: GPL-3.0-only
