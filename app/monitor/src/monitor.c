@@ -73,6 +73,15 @@ extern void pci_scan(void);
 extern void pci_detail(BYTE bus,BYTE dev,BYTE fn);
 extern int pci_find_class(BYTE cls, BYTE sub, PBYTE bus, PBYTE dev, PBYTE fn);
 
+void help() {
+    lw_puts("d        [addr]         Dump 128 bytes(PBYTE)\n\r");
+    lw_puts("ob/ow/ol [addr] [value] Write to Memory\n\r");
+    lw_puts("ib/iw/il [addr]         Read from Memory\n\r");
+    lw_puts("n(r)                    Network debuging (single supported NIC)\n\r");
+    lw_puts("p        <b> <d> <f>    PCI information\n\r");
+    lw_puts("v(e/x)                  Video info, enter/exit gfx\n\r");
+}
+
 static int parse_hex(const char **p, PDWORD out) {
     const char *s = *p;
     DWORD v = 0;
@@ -107,7 +116,7 @@ static void execute(const char* str) {
 
     switch (c0) {
         case 'h': {
-            lw_puts("d [ADDR]\n\r");
+            help();
             break;
         }
         case 'd': {
