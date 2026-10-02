@@ -15,6 +15,7 @@
  */
 
 #include "stdint.h"
+#include "dev/blockdev.h"
 
 #define LW_ABI_MAGIC 0x4241574cu    /* "LWAB" */
 #define LW_ABI_BASE  0x00100000u
@@ -76,6 +77,9 @@ enum {
     LW_SLOT_DISK_WRITE          = 0x64,
     LW_SLOT_DISK_STRERROR       = 0x65,
 
+    LW_SLOT_BLK_COUNT           = 0x66,
+    LW_SLOT_BLK_GET             = 0x67,
+
     LW_SLOT_RESV_ENTRY          = 0x7f,
 
     LW_SLOT_COUNT
@@ -124,6 +128,9 @@ extern PVOID *lw_abi_base;
 #define lw_get_fb_h     LW_CALL(LW_SLOT_INFO_FB_H,          DWORD (*)(void))
 #define lw_get_fb_bpp   LW_CALL(LW_SLOT_INFO_FB_BPP,        DWORD (*)(void))
 #define lw_get_fb_pitch LW_CALL(LW_SLOT_INFO_FB_PITCH,      DWORD (*)(void))
+
+#define lw_blk_count    LW_CALL(LW_SLOT_BLK_COUNT, BYTE (*)(void))
+#define lw_blk_get      LW_CALL(LW_SLOT_BLK_GET, PBLKDEV (*)(BYTE))
 
 #define lw_disk_probe   LW_CALL(LW_SLOT_DISK_PROBE,         void (*)(void))
 #define lw_disk_count   LW_CALL(LW_SLOT_DISK_COUNT,         BYTE (*)(void))

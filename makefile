@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 TOOL_ASM	= nasm
 TOOL_C		= gcc
 TOOL_LD		= ld
@@ -6,7 +8,8 @@ TOOL_LD		= ld
 #   boot/    MBR + STAGE2, 实模式, 装进磁盘保留扇区
 #   loader/  LOADER.BIN, 0x10000, 自带驱动, 不依赖 lib
 #   lib/     库. lib/include 是对外公开的头 (abi.h 等), 谁都能用;
-#            lib/abi 是 ABI.BIN (0x100000), 头文件只给它自己用
+#            lib/src 是共享源码, 按 APP / KERN 显式选择并分别编译;
+#            lib/abi 是 ABI.BIN (0x100000), 私有头文件只给它自己用
 #   app/     跑在 ABI 之上的程序, 只能看见 lib/include
 # 中间产物全部放 build/, 成品放 bin/, 源码目录里不留 .o
 
@@ -30,13 +33,6 @@ LIBGCC		:= $(shell $(TOOL_C) -m32 -print-libgcc-file-name)
 BIN_DIR		= bin
 BUILD_DIR	= build
 
-APP_LIB_SRCS := $(wildcard lib/src/*.c)
-APP_LIB_OBJS := $(patsubst lib/src/%.c,$(BUILD_DIR)/lib/app/%.o,$(APP_LIB_SRCS))
-
-$(BUILD_DIR)/lib/app/%.o: lib/src/%.c
-	@mkdir -p $(@D)
-	$(TOOL_C) $(CFLAGS_APP) $(LIB_INC) -c $< -o $@
-
 LIB_INC		= -Ilib/include
 
 IMG			= lwcnc.img
@@ -57,6 +53,7 @@ all: $(IMG)
 # 必须在镜像规则之前 include: 依赖列表里的 $(FSROOT_FILES) 是立即展开的
 include boot/build.mk
 include loader/build.mk
+include lib/build.mk
 include lib/abi/build.mk
 include app/monitor/build.mk
 include app/test1/build.mk

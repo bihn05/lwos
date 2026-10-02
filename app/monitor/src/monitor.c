@@ -4,8 +4,10 @@
 #include "eth_tmp.h"
 #include "fs.h"
 
+// headers from common libraries
 #include "convert.h"
 #include "string.h"
+#include "dev/blockdev.h"
 
 PVOID *lw_abi_base;
 
@@ -49,6 +51,8 @@ extern void pci_detail(BYTE bus,BYTE dev,BYTE fn);
 extern int pci_find_class(BYTE cls, BYTE sub, PBYTE bus, PBYTE dev, PBYTE fn);
 
 void help() {
+    lw_puts("br/bw    [dev] [addr]   Block device operation\n\r");
+    lw_puts("         [addr] [count]\n\r");
     lw_puts("d        [addr]         Dump 128 bytes(PBYTE)\n\r");
     lw_puts("ob/ow/ol [addr] [value] Write to Memory\n\r");
     lw_puts("ib/iw/il [addr]         Read from Memory\n\r");
@@ -124,6 +128,11 @@ static void execute(const char* str) {
                     break;
                 }
             }
+            break;
+        }
+        case 'b': {
+            lw_puts("BLOCK DEVICE\n\r");
+
             break;
         }
         case 'h': {

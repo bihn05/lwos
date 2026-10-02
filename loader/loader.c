@@ -296,6 +296,7 @@ int part_entry = 0;
 
 int fat_init() {
     memzero(fat_buf, 512);
+    // assumpted to use ata
     ata_read(0, 1, (uint16_p)fat_buf);
 
     memcpy(mbrpte, fat_buf+0x1be, 16*4);

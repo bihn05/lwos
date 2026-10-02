@@ -1,7 +1,7 @@
 #include "stdint.h"
 
 const char *strtok(const char *src, char dec) {
-    char *p=src;
+    char *p=(char*)src;
     while (*p++) {
         if (*p==dec) {
             *p=0;

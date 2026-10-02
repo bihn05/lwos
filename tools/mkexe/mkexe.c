@@ -20,7 +20,7 @@ typedef struct {
 
     unsigned int sym_count;
     unsigned int export_off;
-    unsigned int reserved;
+    unsigned int export_count;
     unsigned int crc32;
 } LwpHdr;
 

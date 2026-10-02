@@ -1,5 +1,6 @@
-#include "ata.h"
+#include "dev/ata.h"
 #include "text.h"
+#include "dev/blockdev.h"
 
 static ATA_DEV devs[ATA_MAX_DEVICES];
 static BYTE n_devs;
@@ -416,4 +417,86 @@ int ata_write(
     PCVOID buf
 ) {
     return xfer(index, lba, sectors, (PVOID)buf, 1);
+}
+
+/* PIO 适配层: 对象与上下文驻留在 ABI.BIN 中。 */
+typedef struct {
+    BYTE index;
+} PIO_BLK_CTX;
+
+static BLKDEV block_devices[ATA_MAX_DEVICES];
+static PIO_BLK_CTX block_contexts[ATA_MAX_DEVICES];
+
+static int pio_blk_xfer(PBLKDEV d, QWORD lba, DWORD count,
+                        PVOID buf, int write) {
+    if (!d || !d->priv || !buf || !count || lba >= d->sectors ||
+        (QWORD)count > d->sectors - lba)
+        return E_ARG;
+    PIO_BLK_CTX *ctx = d->priv;
+    PCATA_DEV a = ata_get(ctx->index);
+    if (!a)
+        return E_NODEV;
+    PBYTE p = buf;
+    while (count) {
+        /* 保守地每批最多 256 扇区, 底层自行选择 LBA28 / LBA48。 */
+        DWORD batch = count > 256 ? 256 : count;
+        int r = write ? ata_write(ctx->index, lba, batch, p)
+                      : ata_read(ctx->index, lba, batch, p);
+        if (r)
+            return r;
+        p += batch * 512u;
+        lba += batch;
+        count -= batch;
+    }
+    return 0;
+}
+
+static int pio_blk_read(PBLKDEV d, QWORD lba, DWORD count, PVOID buf) {
+    return pio_blk_xfer(d, lba, count, buf, 0);
+}
+
+static int pio_blk_write(PBLKDEV d, QWORD lba, DWORD count, PCVOID buf) {
+    return pio_blk_xfer(d, lba, count, (PVOID)buf, 1);
+}
+
+static int pio_blk_flush(PBLKDEV d) {
+    if (!d || !d->priv)
+        return E_ARG;
+    PIO_BLK_CTX *ctx = d->priv;
+    PCATA_DEV a = ata_get(ctx->index);
+    if (!a || !a->present)
+        return E_NODEV;
+    ata_select(a->channel, a->drive);
+    int r = ata_wait(a->channel, 0);
+    if (r)
+        return r;
+    outb(base_of(a->channel) + ATA_REG_COMMAND,
+         a->lba48 ? ATA_CMD_FLUSH_CACHE_E : ATA_CMD_FLUSH_CACHE);
+    ata_delay400(a->channel);
+    r = ata_wait(a->channel, 0);
+    if (r)
+        return r;
+    BYTE st = inb(base_of(a->channel) + ATA_REG_STATUS);
+    return st & (ATA_SR_ERR | ATA_SR_DF) ? E_FLUSH : 0;
+}
+
+int ata_register_blockdevs(void) {
+    for (BYTE i = 0; i < ata_count(); i++) {
+        PCATA_DEV a = ata_get(i);
+        if (!a->present || a->type != ATA_DEV_PATA || !a->sectors)
+            continue;
+        PBLKDEV d = &block_devices[i];
+        *d = (BLKDEV){
+            .version = BLKDEV_VERSION, .size = sizeof(*d),
+            .name = "ata0", .sector_size = 512, .sectors = a->sectors,
+            .read = pio_blk_read, .write = pio_blk_write,
+            .flush = pio_blk_flush, .poll = 0,
+            .priv = &block_contexts[i]
+        };
+        d->name[3] = '0' + i;
+        block_contexts[i].index = i;
+        if (blkdev_register(d) < 0)
+            return -1;
+    }
+    return 0;
 }

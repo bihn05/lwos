@@ -12,5 +12,6 @@
    +28h: DWORD  reloc_count   number of relocation entries
    +2ch: DWORD  sym_off       file offset of symbol table (monitor disassembly/backtrace); may be 0
    +30h: DWORD  sym_count     number of symbol entries
-   +34h: DWORD  export_off    file offset of export table (DLL; see spec2/41-dll.md)+   +38h: DWORD  export_count  number of export entries
+   +34h: DWORD  export_off    file offset of export table (DLL; see spec2/41-dll.md)+
+   +38h: DWORD  export_count  number of export entries
    +3ch: DWORD  crc32         CRC32 of file image bytes; 0 = no check

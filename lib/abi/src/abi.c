@@ -9,16 +9,23 @@
 #include "text.h"
 #include "io.h"
 #include "kbd.h"
-#include "ata.h"
 #include "binfo.h"
 #include "tramp.h"
 #include "fpu.h"
 #include "pci.h"
-#include "ata.h"
+#include "dev/ata.h"
 
 extern char __bss_start[], __bss_end[];
 
 int abi_init(void);
+
+/* 启动阶段探测并注册; 后续 AHCI 可在这里追加注册步骤。 */
+static void disk_probe(void) {
+    blkdev_reset();
+    ata_detect_quiet();
+    if (ata_register_blockdevs() < 0)
+        puts("BLOCK DEVICE TABLE FULL\n\r");
+}
 
 const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(16))) = {
     [LW_SLOT_MAGIC]     = (PVOID)LW_ABI_MAGIC,
@@ -64,12 +71,15 @@ const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(
     [LW_SLOT_PCI_READ_DWORD]    = (PVOID)pci_read_dword,
     [LW_SLOT_PCI_WRITE_DWORD]   = (PVOID)pci_write_dword,
 
-    [LW_SLOT_DISK_PROBE]        = (PVOID)ata_detect_quiet, // quiet should
+    [LW_SLOT_DISK_PROBE]        = (PVOID)disk_probe,
     [LW_SLOT_DISK_COUNT]        = (PVOID)ata_count,
-    [LW_SLOT_DISK_INFO]         = (PVOID)ata_detect,
+    [LW_SLOT_DISK_INFO]         = (PVOID)ata_get,
     [LW_SLOT_DISK_READ]         = (PVOID)ata_read,
     [LW_SLOT_DISK_WRITE]        = (PVOID)ata_write,
     [LW_SLOT_DISK_STRERROR]     = (PVOID)ata_strerror,
+
+    [LW_SLOT_BLK_COUNT]         = (PVOID)blkdev_count,
+    [LW_SLOT_BLK_GET]           = (PVOID)blkdev_get,
 
     [LW_SLOT_RESV_ENTRY]        = (PVOID)binfo_dump
 };

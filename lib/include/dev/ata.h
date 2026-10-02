@@ -105,4 +105,7 @@ void ata_identify_parse(
     const WORD id[256]
 );
 
+/* 将探测结果注册到块设备表; 注册表满时返回 -1。 */
+int ata_register_blockdevs(void);
+
 #endif
