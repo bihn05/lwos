@@ -14,6 +14,7 @@
 #include "tramp.h"
 #include "fpu.h"
 #include "pci.h"
+#include "ata.h"
 
 extern char __bss_start[], __bss_end[];
 
@@ -62,6 +63,13 @@ const PVOID lw_abi[LW_SLOT_COUNT] __attribute__((section(".abi"), used, aligned(
     [LW_SLOT_PCI_PRESENT]       = (PVOID)pci_present,
     [LW_SLOT_PCI_READ_DWORD]    = (PVOID)pci_read_dword,
     [LW_SLOT_PCI_WRITE_DWORD]   = (PVOID)pci_write_dword,
+
+    [LW_SLOT_DISK_PROBE]        = (PVOID)ata_detect_quiet, // quiet should
+    [LW_SLOT_DISK_COUNT]        = (PVOID)ata_count,
+    [LW_SLOT_DISK_INFO]         = (PVOID)ata_detect,
+    [LW_SLOT_DISK_READ]         = (PVOID)ata_read,
+    [LW_SLOT_DISK_WRITE]        = (PVOID)ata_write,
+    [LW_SLOT_DISK_STRERROR]     = (PVOID)ata_strerror,
 
     [LW_SLOT_RESV_ENTRY]        = (PVOID)binfo_dump
 };

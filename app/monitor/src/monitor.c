@@ -1,8 +1,11 @@
 
 #include "abi.h"
 #include "ctx.h"
-
 #include "eth_tmp.h"
+#include "fs.h"
+
+#include "convert.h"
+#include "string.h"
 
 PVOID *lw_abi_base;
 
@@ -41,34 +44,6 @@ static void prompt_read() {
     }
 }
 
-static void skip_ws(const char **p) {
-    while (**p==' '||**p=='\t') {
-        (*p)++;
-    }
-}
-
-static int hex_catch(char c) {
-    switch (c) {
-        case '0':return 0x0;
-        case '1':return 0x1;
-        case '2':return 0x2;
-        case '3':return 0x3;
-        case '4':return 0x4;
-        case '5':return 0x5;
-        case '6':return 0x6;
-        case '7':return 0x7;
-        case '8':return 0x8;
-        case '9':return 0x9;
-        case 'a':case 'A':return 0xa;
-        case 'b':case 'B':return 0xb;
-        case 'c':case 'C':return 0xc;
-        case 'd':case 'D':return 0xd;
-        case 'e':case 'E':return 0xe;
-        case 'f':case 'F':return 0xf;
-        default:return -1u;
-    }
-}
-
 extern void pci_scan(void);
 extern void pci_detail(BYTE bus,BYTE dev,BYTE fn);
 extern int pci_find_class(BYTE cls, BYTE sub, PBYTE bus, PBYTE dev, PBYTE fn);
@@ -82,32 +57,14 @@ void help() {
     lw_puts("v(e/x)                  Video info, enter/exit gfx\n\r");
 }
 
-static int parse_hex(const char **p, PDWORD out) {
-    const char *s = *p;
-    DWORD v = 0;
-    int digits = 0;
-
-    skip_ws(&s);
-    for (;;) {
-        unsigned int d = hex_catch(*s);
-        if (d==-1u)break;
-        v=v<<4;
-        v|=(DWORD)(d&0xf);
-        digits++;
-        s++;
-    }
-    if (!digits)return 0;
-    *p=s;
-    *out=v;
-    return 1;
-}
-
 static void execute(const char* str) {
     char c0;
     char c1;
     skip_ws(&str);
     DWORD a;
     DWORD b;
+    DWORD c;
+    DWORD d;
 
     if (!*str)return;
     c0 = *str++;
@@ -115,22 +72,80 @@ static void execute(const char* str) {
             *str++:0;
 
     switch (c0) {
+        case 'a': {
+            switch (c1) {
+                case 'p': {
+                    lw_puts("DISK PROBE\n\r");
+                    lw_disk_probe();
+                    return;
+                }
+                case 'r': {
+                    if (!hex_parse(&str,&a)||
+                    !hex_parse(&str,&b)||
+                    !hex_parse(&str,&c)||
+                    !hex_parse(&str,&d)) {
+                        lw_puts("SYNTAX ERROR\n\r");
+                        return;
+                    }
+                    lw_disk_read(a,b,d,(PVOID)c);
+                    lw_puts("READ  ");
+                    lw_put_dword(d);
+                    lw_puts(" SECTOR(S) FROM LBA ");
+                    lw_put_dword(b);
+                    lw_puts(" TO [");
+                    lw_put_dword(c);
+                    lw_puts("] AT DEV ");
+                    lw_put_byte(a);
+                    lw_puts("\n\r");
+                    break;
+                }
+                case 'w': {
+                    if (!hex_parse(&str,&a)||
+                    !hex_parse(&str,&b)||
+                    !hex_parse(&str,&c)||
+                    !hex_parse(&str,&d)) {
+                        lw_puts("SYNTAX ERROR\n\r");
+                        return;
+                    }
+                    lw_disk_write(a,b,d,(PVOID)c);
+                    lw_puts("WRITE ");
+                    lw_put_dword(d);
+                    lw_puts(" SECTOR(S) TO LBA ");
+                    lw_put_dword(b);
+                    lw_puts(" FROM [");
+                    lw_put_dword(c);
+                    lw_puts("] AT DEV ");
+                    lw_put_byte(a);
+                    lw_puts("\n\r");
+                    break;
+                }
+                case 0: {
+                    lw_puts("USAGE: ar/w [DEV] [LBA] [TARGET] [COUNT]\n\r");
+                    break;
+                }
+            }
+            break;
+        }
         case 'h': {
             help();
             break;
         }
+        case 'f': {
+            fs_init();
+            break;
+        }
         case 'd': {
-            if (!parse_hex(&str, &a)) {
+            if (!hex_parse(&str, &a)) {
                 return;
             }
             lw_dump128((PVOID)a);
             break;
         }
         case 'o': { // out/write
-            if (!parse_hex(&str, &a)) {
+            if (!hex_parse(&str, &a)) {
                 return;
             }
-            if (!parse_hex(&str,&b)) {
+            if (!hex_parse(&str,&b)) {
                 return;
             }
             switch (c1) {
@@ -188,7 +203,7 @@ static void execute(const char* str) {
         }
         case 'i': { // in/read
             DWORD d;
-            if (!parse_hex(&str, &a)) {
+            if (!hex_parse(&str, &a)) {
                 return;
             }
             switch (c1) {
@@ -239,7 +254,6 @@ static void execute(const char* str) {
             }
             switch (c1) {
                 case 'r': {
-
                     while (lw_getp()==0xffffffff) {
                         e1k_rx_poll();
                     }
@@ -253,11 +267,11 @@ static void execute(const char* str) {
         }
         case 'p': {
             DWORD bus, dev, fn;
-            if (!parse_hex(&str,&bus)) {
+            if (!hex_parse(&str,&bus)) {
                 pci_scan();
                 return;
             }
-            if (!parse_hex(&str,&dev) || !parse_hex(&str, &fn)) {
+            if (!hex_parse(&str,&dev) || !hex_parse(&str, &fn)) {
                 pci_scan();
                 return;
             }
@@ -298,10 +312,9 @@ static void execute(const char* str) {
             break;
         }
         case '.': {
-            while (1) {
-                DWORD d=lw_getp();
-                lw_put_dword(d);
-            }
+            DWORD v;
+            hex_parse(&str, &v);
+            lw_put_dword(v);
             break;
         }
     }

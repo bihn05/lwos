@@ -1,15 +1,16 @@
-   +0h:    4B  magic 'LWP'
-   +4h:  WORD  version
-   +6h:  WORD  header size
-   +8h: DWORD  flags
-   +ch: DWORD  abi version
-  +10h: DWORD  entry (entry - base)
-  +14h: DWORD  image offset (base - filebeg)
-  +18h: DWORD  image size
-  +1ch: DWORD  memory size (file size)
-  +20h: DWORD  stack size (image + bss)
-  +24h: DWORD  relocation offset
-               
-  +28h: DWORD  relocation count
-  +2ch: DWORD  symbol offset
-  +30h: DWORD  symbol count
+   +00h: DWORD  magic         'LWP\0' = 0x0050574C
+   +04h:  WORD  version       1
+   +06h:  WORD  hdr_size      header size (0x40 for v1)
+   +08h: DWORD  flags         bit0: DLL; bit1: uses FPU; bit2: no relocation (fixed address)
+   +0ch: DWORD  abi_need      minimum required ABI slot count
+   +10h: DWORD  entry         entry RVA; runtime address = image base + entry
+   +14h: DWORD  image_off     file offset of image data
+   +18h: DWORD  image_size    image bytes stored in file (text + rodata + data)
+   +1ch: DWORD  mem_size      image memory size (image_size + bss); >= image_size
+   +20h: DWORD  stack_size    separate EXE stack size; DLL: 0 (uses caller's stack)
+   +24h: DWORD  reloc_off     file offset of relocation table
+   +28h: DWORD  reloc_count   number of relocation entries
+   +2ch: DWORD  sym_off       file offset of symbol table (monitor disassembly/backtrace); may be 0
+   +30h: DWORD  sym_count     number of symbol entries
+   +34h: DWORD  export_off    file offset of export table (DLL; see spec2/41-dll.md)+   +38h: DWORD  export_count  number of export entries
+   +3ch: DWORD  crc32         CRC32 of file image bytes; 0 = no check

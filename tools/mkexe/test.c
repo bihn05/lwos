@@ -1,0 +1,3 @@
+int lwp_main() {
+    
+}

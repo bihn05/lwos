@@ -81,6 +81,7 @@ typedef const ATA_DEV *PCATA_DEV;
 
 void ata_init(void);
 void ata_detect(void);
+void ata_detect_quiet(void);
 BYTE ata_count(void);
 PCATA_DEV ata_get(BYTE index);
 

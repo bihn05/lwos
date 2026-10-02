@@ -8,7 +8,9 @@ MON_OBJS	= $(BUILD_DIR)/$(MON_DIR)/head.o \
 			  $(BUILD_DIR)/$(MON_DIR)/isr.o \
 			  $(BUILD_DIR)/$(MON_DIR)/idt.o \
 			  $(BUILD_DIR)/$(MON_DIR)/pci_det.o \
-			  $(BUILD_DIR)/$(MON_DIR)/eth_tmp.o
+			  $(BUILD_DIR)/$(MON_DIR)/eth_tmp.o \
+			  $(BUILD_DIR)/$(MON_DIR)/fs.o \
+
 
 $(BUILD_DIR)/$(MON_DIR)/%.o: $(MON_DIR)/src/%.c
 	@mkdir -p $(@D)
@@ -19,9 +21,10 @@ $(BUILD_DIR)/$(MON_DIR)/%.o: $(MON_DIR)/src/%.s
 	$(TOOL_ASM) $(ASFLAGS) $< -o $@
 
 # libgcc 必须在所有 .o 之后
-$(MON_ELF): $(MON_OBJS) $(MON_DIR)/monitor.ld
+$(MON_ELF): $(MON_OBJS) $(APP_LIB_OBJS) $(MON_DIR)/monitor.ld
 	@mkdir -p $(@D)
-	$(TOOL_LD) $(LDFLAGS) -T $(MON_DIR)/monitor.ld -o $@ $(MON_OBJS) $(LIBGCC)
+	$(TOOL_LD) $(LDFLAGS) -T $(MON_DIR)/monitor.ld -o $@ \
+		$(MON_OBJS) $(APP_LIB_OBJS) $(LIBGCC)
 
 FSROOT_FILES += $(FSROOT)/MONITOR.BIN
 $(FSROOT)/MONITOR.BIN: $(MON_BIN)

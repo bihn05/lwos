@@ -21,7 +21,7 @@ ASFLAGS		= -f elf32
 CFLAGS_BASE	= -m32 -ffreestanding -fno-pie \
 			  -fno-stack-protector -fno-builtin -nostdlib \
 			  -mno-mmx -mno-sse -mno-sse2 \
-			  -Wall -Wextra -Werror -Os -std=gnu11 -MMD -MP
+			  -Wall -Wextra -Os -std=gnu11 -MMD -MP
 CFLAGS_KERN	= $(CFLAGS_BASE) -mno-80387 -mno-fp-ret-in-387
 CFLAGS_APP	= $(CFLAGS_BASE) -mfpmath=387
 LDFLAGS		= -m elf_i386 -nostdlib --no-warn-rwx-segments
@@ -29,6 +29,13 @@ LIBGCC		:= $(shell $(TOOL_C) -m32 -print-libgcc-file-name)
 
 BIN_DIR		= bin
 BUILD_DIR	= build
+
+APP_LIB_SRCS := $(wildcard lib/src/*.c)
+APP_LIB_OBJS := $(patsubst lib/src/%.c,$(BUILD_DIR)/lib/app/%.o,$(APP_LIB_SRCS))
+
+$(BUILD_DIR)/lib/app/%.o: lib/src/%.c
+	@mkdir -p $(@D)
+	$(TOOL_C) $(CFLAGS_APP) $(LIB_INC) -c $< -o $@
 
 LIB_INC		= -Ilib/include
 

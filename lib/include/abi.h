@@ -69,6 +69,13 @@ enum {
     LW_SLOT_PCI_READ_DWORD      = 0x41,
     LW_SLOT_PCI_WRITE_DWORD     = 0x42,
 
+    LW_SLOT_DISK_PROBE          = 0x60,
+    LW_SLOT_DISK_COUNT          = 0x61,
+    LW_SLOT_DISK_INFO           = 0x62,
+    LW_SLOT_DISK_READ           = 0x63,
+    LW_SLOT_DISK_WRITE          = 0x64,
+    LW_SLOT_DISK_STRERROR       = 0x65,
+
     LW_SLOT_RESV_ENTRY          = 0x7f,
 
     LW_SLOT_COUNT
@@ -85,44 +92,51 @@ extern PVOID *lw_abi_base;
 #define LW_ABI_VALID()      ((DWORD)lw_abi_base[LW_SLOT_MAGIC] == LW_ABI_MAGIC)
 #define LW_CALL(slot, type) ((type)lw_abi_base[slot])
 
-#define lw_putc         LW_CALL(LW_SLOT_CONSOLE_PUTC,      void (*)(char))
-#define lw_putca        LW_CALL(LW_SLOT_CONSOLE_PUTCA,     void (*)(char))
-#define lw_puts         LW_CALL(LW_SLOT_CONSOLE_PUTS,      void (*)(const char *))
-#define lw_puts_pad     LW_CALL(LW_SLOT_CONSOLE_PUTS_PAD,  void (*)(const char *, int))
-#define lw_put_byte     LW_CALL(LW_SLOT_CONSOLE_PUT_BYTE,  void (*)(BYTE))
-#define lw_put_word     LW_CALL(LW_SLOT_CONSOLE_PUT_WORD,  void (*)(WORD))
-#define lw_put_dword    LW_CALL(LW_SLOT_CONSOLE_PUT_DWORD, void (*)(DWORD))
-#define lw_put_qword    LW_CALL(LW_SLOT_CONSOLE_PUT_QWORD, void (*)(QWORD))
-#define lw_screen_clear LW_CALL(LW_SLOT_CONSOLE_CLEAR,     void (*)(void))
-#define lw_dump128      LW_CALL(LW_SLOT_CONSOLE_DUMP128,   void (*)(PVOID))
-#define lw_getk         LW_CALL(LW_SLOT_CONSOLE_GETK,      int (*)(void))
-#define lw_getc         LW_CALL(LW_SLOT_CONSOLE_GETC,      char (*)(void))
-#define lw_getp         LW_CALL(LW_SLOT_CONSOLE_GETP,      DWORD (*)(void))
+#define lw_putc         LW_CALL(LW_SLOT_CONSOLE_PUTC,       void (*)(char))
+#define lw_putca        LW_CALL(LW_SLOT_CONSOLE_PUTCA,      void (*)(char))
+#define lw_puts         LW_CALL(LW_SLOT_CONSOLE_PUTS,       void (*)(const char *))
+#define lw_puts_pad     LW_CALL(LW_SLOT_CONSOLE_PUTS_PAD,   void (*)(const char *, int))
+#define lw_put_byte     LW_CALL(LW_SLOT_CONSOLE_PUT_BYTE,   void (*)(BYTE))
+#define lw_put_word     LW_CALL(LW_SLOT_CONSOLE_PUT_WORD,   void (*)(WORD))
+#define lw_put_dword    LW_CALL(LW_SLOT_CONSOLE_PUT_DWORD,  void (*)(DWORD))
+#define lw_put_qword    LW_CALL(LW_SLOT_CONSOLE_PUT_QWORD,  void (*)(QWORD))
+#define lw_screen_clear LW_CALL(LW_SLOT_CONSOLE_CLEAR,      void (*)(void))
+#define lw_dump128      LW_CALL(LW_SLOT_CONSOLE_DUMP128,    void (*)(PVOID))
+#define lw_getk         LW_CALL(LW_SLOT_CONSOLE_GETK,       int (*)(void))
+#define lw_getc         LW_CALL(LW_SLOT_CONSOLE_GETC,       char (*)(void))
+#define lw_getp         LW_CALL(LW_SLOT_CONSOLE_GETP,       DWORD (*)(void))
 
-#define lw_outb         LW_CALL(LW_SLOT_IO_OUTB,           void (*)(WORD, BYTE))
-#define lw_outw         LW_CALL(LW_SLOT_IO_OUTW,           void (*)(WORD, WORD))
-#define lw_outl         LW_CALL(LW_SLOT_IO_OUTL,           void (*)(WORD, DWORD))
-#define lw_inb          LW_CALL(LW_SLOT_IO_INB,            BYTE (*)(WORD))
-#define lw_inw          LW_CALL(LW_SLOT_IO_INW,            WORD (*)(WORD))
-#define lw_inl          LW_CALL(LW_SLOT_IO_INL,            DWORD (*)(WORD))
-#define lw_kbd_probe    LW_CALL(LW_SLOT_IO_KBD_PROBE,      void (*)(void))
-#define lw_kbd_enable   LW_CALL(LW_SLOT_IO_KBD_ENABLE,     void (*)(void))
-#define lw_gfx_enter    LW_CALL(LW_SLOT_IO_VIDEO_ENTER,    int (*)(void))
-#define lw_gfx_exit     LW_CALL(LW_SLOT_IO_VIDEO_EXIT,     void (*)(void))
-#define lw_gfx_is_live  LW_CALL(LW_SLOT_IO_VIDEO_LIVE,     int (*)(void))
-#define lw_fpu_init     LW_CALL(LW_SLOT_IO_FPU_INIT,       void (*)(void))
+#define lw_outb         LW_CALL(LW_SLOT_IO_OUTB,            void (*)(WORD, BYTE))
+#define lw_outw         LW_CALL(LW_SLOT_IO_OUTW,            void (*)(WORD, WORD))
+#define lw_outl         LW_CALL(LW_SLOT_IO_OUTL,            void (*)(WORD, DWORD))
+#define lw_inb          LW_CALL(LW_SLOT_IO_INB,             BYTE (*)(WORD))
+#define lw_inw          LW_CALL(LW_SLOT_IO_INW,             WORD (*)(WORD))
+#define lw_inl          LW_CALL(LW_SLOT_IO_INL,             DWORD (*)(WORD))
+#define lw_kbd_probe    LW_CALL(LW_SLOT_IO_KBD_PROBE,       void (*)(void))
+#define lw_kbd_enable   LW_CALL(LW_SLOT_IO_KBD_ENABLE,      void (*)(void))
+#define lw_gfx_enter    LW_CALL(LW_SLOT_IO_VIDEO_ENTER,     int (*)(void))
+#define lw_gfx_exit     LW_CALL(LW_SLOT_IO_VIDEO_EXIT,      void (*)(void))
+#define lw_gfx_is_live  LW_CALL(LW_SLOT_IO_VIDEO_LIVE,      int (*)(void))
+#define lw_fpu_init     LW_CALL(LW_SLOT_IO_FPU_INIT,        void (*)(void))
 
-#define lw_get_fb       LW_CALL(LW_SLOT_INFO_FB,           DWORD (*)(void))
-#define lw_get_fb_w     LW_CALL(LW_SLOT_INFO_FB_W,         DWORD (*)(void))
-#define lw_get_fb_h     LW_CALL(LW_SLOT_INFO_FB_H,         DWORD (*)(void))
-#define lw_get_fb_bpp   LW_CALL(LW_SLOT_INFO_FB_BPP,       DWORD (*)(void))
-#define lw_get_fb_pitch LW_CALL(LW_SLOT_INFO_FB_PITCH,     DWORD (*)(void))
+#define lw_get_fb       LW_CALL(LW_SLOT_INFO_FB,            DWORD (*)(void))
+#define lw_get_fb_w     LW_CALL(LW_SLOT_INFO_FB_W,          DWORD (*)(void))
+#define lw_get_fb_h     LW_CALL(LW_SLOT_INFO_FB_H,          DWORD (*)(void))
+#define lw_get_fb_bpp   LW_CALL(LW_SLOT_INFO_FB_BPP,        DWORD (*)(void))
+#define lw_get_fb_pitch LW_CALL(LW_SLOT_INFO_FB_PITCH,      DWORD (*)(void))
 
-#define lw_pci_present  LW_CALL(LW_SLOT_PCI_PRESENT,       int (*)(void))
-#define lw_pci_read     LW_CALL(LW_SLOT_PCI_READ_DWORD,    DWORD (*)(BYTE, BYTE, BYTE, BYTE))
-#define lw_pci_write    LW_CALL(LW_SLOT_PCI_WRITE_DWORD,   void (*)(BYTE, BYTE, BYTE, BYTE, DWORD))
+#define lw_disk_probe   LW_CALL(LW_SLOT_DISK_PROBE,         void (*)(void))
+#define lw_disk_count   LW_CALL(LW_SLOT_DISK_COUNT,         BYTE (*)(void))
+#define lw_disk_info    LW_CALL(LW_SLOT_DISK_INFO,          PVOID (*)(BYTE))
+#define lw_disk_read    LW_CALL(LW_SLOT_DISK_READ,          int (*)(BYTE, QWORD, DWORD, PVOID))
+#define lw_disk_write   LW_CALL(LW_SLOT_DISK_WRITE,         int (*)(BYTE, QWORD, DWORD, PCVOID))
+#define lw_disk_strerr  LW_CALL(LW_SLOT_DISK_STRERROR,      const char *(*)(int))
 
-#define lw_resv_entry   LW_CALL(LW_SLOT_RESV_ENTRY,        void (*)(void))
+#define lw_pci_present  LW_CALL(LW_SLOT_PCI_PRESENT,        int (*)(void))
+#define lw_pci_read     LW_CALL(LW_SLOT_PCI_READ_DWORD,     DWORD (*)(BYTE, BYTE, BYTE, BYTE))
+#define lw_pci_write    LW_CALL(LW_SLOT_PCI_WRITE_DWORD,    void (*)(BYTE, BYTE, BYTE, BYTE, DWORD))
+
+#define lw_resv_entry   LW_CALL(LW_SLOT_RESV_ENTRY,         void (*)(void))
 // check LWAB
 static inline int lw_abi_attach(PVOID base) {
     PVOID *t = (PVOID *)base;

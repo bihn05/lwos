@@ -257,6 +257,42 @@ void ata_detect(void) {
 	puts("\n\r");
 }
 
+void ata_detect_quiet(void) {
+	ata_init();
+
+	for (BYTE channel = 0; channel < 2; channel++) {
+		WORD b = base_of(channel);
+
+		if (inb(b + ATA_REG_STATUS) == 0xFF) {
+			continue;
+		}
+
+		for (BYTE drive = 0; drive < 2; drive++) {
+			PATA_DEV d = &devs[n_devs];
+			int r;
+
+			if (n_devs >= ATA_MAX_DEVICES)
+				break;
+
+			/* Scratch test: write a pattern to two registers the
+			 * drive must hold, and see if it comes back. */
+			ata_select(channel, drive);
+			outb(b + ATA_REG_SECCOUNT0, 0x55);
+			outb(b + ATA_REG_LBA0, 0xAA);
+			if (inb(b + ATA_REG_SECCOUNT0) != 0x55 ||
+			    inb(b + ATA_REG_LBA0) != 0xAA)
+				continue;
+
+			r = ata_identify(channel, drive, d);
+			if (r) {
+				d->present = 0;
+				continue;
+			}
+			n_devs++;
+		}
+	}
+}
+
 static int setup_lba28(PCATA_DEV d, DWORD lba, BYTE sectors) {
     WORD b = base_of(d->channel);
 
