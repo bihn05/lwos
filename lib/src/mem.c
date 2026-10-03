@@ -1,7 +1,7 @@
 #include "mem.h"
 #include "stdint.h"
 
-PVOID memcpy(PVOID dst, PVOID src, int count) {
+PVOID memcpy(PVOID dst, PCVOID src, int count) {
     void * ret = dst;
     while (count--) {
         *(char *)dst = *(char *)src;

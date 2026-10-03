@@ -30,7 +30,7 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc-multilib nasm
+          sudo apt-get install -y --no-install-recommends gcc-multilib nasm dosfstools mtools
 
       - name: Build image
         run: make -j"$(nproc)" webimg

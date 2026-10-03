@@ -10,8 +10,8 @@ BYTE hex_digit(char c) {
     }
     return 0xff;
 }
-int hex_parse(const char ** p, PDWORD out) {
-    const char *s = *p;
+int hex_parse(PPCSTR p, PDWORD out) {
+    PCSTR s = *p;
     DWORD v = 0;
     int digits = 0;
     skip_ws(&s);

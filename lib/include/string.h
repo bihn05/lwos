@@ -3,10 +3,15 @@
 
 #include "stdint.h"
 
-const char *strtok(const char *src, char dec);
-int strcmp(const char *s1, const char *s2);
-unsigned int strlen(const char *s);
-char *strcpy(char *dest, const char *src);
-void skip_ws(const char **p);
+PSTR strtok(PSTR src, CHAR dec);
+PCSTR strtok_const(PCSTR src, CHAR dec);
+int strcmp(PCSTR s1, PCSTR s2);
+int strncmp(PCSTR s1, PCSTR s2, int n);
+unsigned int strlen(PCSTR s);
+PSTR strcpy(PSTR dest, PCSTR src);
+void skip_ws(PPCSTR p);
+int strcspn(PCSTR src, PCSTR reject);
+
+CHAR to_upper(BYTE c);
 
 #endif

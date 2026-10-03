@@ -40,7 +40,9 @@ IMG_SECTORS	= 131040
 PART_LBA	= 2048
 
 FSROOT		= fsroot
-MKFAT		= tools/mkfat/mkfat
+MKFS_FAT	= mkfs.fat
+MCOPY		= mcopy
+FAT_IMG		= $(BUILD_DIR)/fat32.img
 
 DEVICE		= /dev/sda
 
@@ -58,12 +60,17 @@ include lib/abi/build.mk
 include app/monitor/build.mk
 include app/test1/build.mk
 
+# resources/ 的文件在镜像中放到 /RES/, 源文件不会被 clean 删除。
+RESOURCE_SRCS := $(shell find resources -type f 2>/dev/null)
+RESOURCE_FILES := $(patsubst resources/%,$(FSROOT)/RES/%,$(RESOURCE_SRCS))
+FSROOT_FILES += $(RESOURCE_FILES)
+ifneq ($(strip $(RESOURCE_FILES)),)
+$(RESOURCE_FILES): $(FSROOT)/RES/%: resources/%
+endif
+
 # ---------------------------------------------------------------- 通用
 $(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf
 	objcopy -O binary $< $@
-
-$(MKFAT): tools/mkfat/mkfat.c
-	gcc $< -o $@
 
 # ---------------------------------------------------------------- fsroot / 镜像
 $(FSROOT_FILES):
@@ -72,13 +79,19 @@ $(FSROOT_FILES):
 
 fsroot: $(FSROOT_FILES)
 
-$(IMG): $(MBR) $(STAGE2) $(MKFAT) $(FSROOT_FILES)
+# 已有的手工文件和目录也触发镜像更新 (包括删除子文件后的目录时间变化)。
+FSROOT_CONTENTS := $(shell find $(FSROOT) -mindepth 1 2>/dev/null)
+
+$(IMG): $(MBR) $(STAGE2) $(FSROOT_FILES) $(FSROOT_CONTENTS) makefile
+	@mkdir -p $(BUILD_DIR)
+	truncate -s $$(( ($(IMG_SECTORS) - $(PART_LBA)) * 512 )) $(FAT_IMG)
+	$(MKFS_FAT) -F 32 -S 512 -s 1 -R 32 -f 2 -h $(PART_LBA) -n "LWCNC FAT32" $(FAT_IMG)
+	$(MCOPY) -s -i $(FAT_IMG) $(FSROOT)/* ::/
 	rm -f $@
 	truncate -s $$(( $(IMG_SECTORS) * 512)) $@
 	dd if=$(MBR)	of=$@ bs=512 count=1 seek=0 conv=notrunc status=none
 	dd if=$(STAGE2) of=$@ bs=512 seek=1 conv=notrunc status=none
-	$(MKFAT) --image $@ --total-sectors $(IMG_SECTORS) --part-lba $(PART_LBA) \
-	    --fsroot $(FSROOT)
+	dd if=$(FAT_IMG) of=$@ bs=512 seek=$(PART_LBA) conv=notrunc status=none
 
 resetimg:
 	rm -f $(IMG)
@@ -100,7 +113,7 @@ $(DEMO_IMG_GZ): $(IMG)
 webimg: $(DEMO_IMG_GZ)
 
 clean:
-	rm -f $(MKFAT) $(IMG) $(DEMO_IMG_GZ)
+	rm -f $(IMG) $(DEMO_IMG_GZ)
 	rm -rf $(BUILD_DIR) $(BIN_DIR) $(FSROOT)
 
 .PHONY: all resetimg run clean fsroot webimg

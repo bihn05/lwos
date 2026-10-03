@@ -61,6 +61,17 @@ void help() {
     lw_puts("v(e/x)                  Video info, enter/exit gfx\n\r");
 }
 
+static void display_banner(void) {
+    lw_puts(" ___       ___       __   ________  ________      \n\r");
+    lw_puts("|\\  \\     |\\  \\     |\\  \\|\\   __  \\|\\   ____\\     \n\r");
+    lw_puts("\\ \\  \\    \\ \\  \\    \\ \\  \\ \\  \\|\\  \\ \\  \\___|_    \n\r");
+    lw_puts(" \\ \\  \\    \\ \\  \\  __\\ \\  \\ \\  \\\\\\  \\ \\_____  \\   \n\r");
+    lw_puts("  \\ \\  \\____\\ \\  \\|\\__\\_\\  \\ \\  \\\\\\  \\|____|\\  \\  \n\r");
+    lw_puts("   \\ \\_______\\ \\____________\\ \\_______\\____\\_\\  \\ \n\r");
+    lw_puts("    \\|_______|\\|____________|\\|_______|\\_________\\\n\r");
+    lw_puts("                                      \\|_________|\n\r");
+    lw_puts("\n   LWOS MT v2 - New Technology Operating System\n\n\r");
+}
 static void execute(const char* str) {
     char c0;
     char c1;
@@ -140,7 +151,8 @@ static void execute(const char* str) {
             break;
         }
         case 'f': {
-            fs_init();
+            if (fs_init() < 0)
+                lw_puts("FILESYSTEM INIT FAILED\n\r");
             break;
         }
         case 'd': {
@@ -320,15 +332,13 @@ static void execute(const char* str) {
             }
             break;
         }
-        case '.': {
-            DWORD v;
-            hex_parse(&str, &v);
-            lw_put_dword(v);
+        case '.': { // new function test
+            DWORD tmp;
+            resolve_path("/res/readme.txt\0", &tmp);
             break;
         }
     }
 }
-
 __attribute__((section(".text.start")))
 void monitor_main(void) {
 

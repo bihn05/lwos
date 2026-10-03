@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 
-PVOID memcpy(PVOID dst, PVOID src, int count);
+PVOID memcpy(PVOID dst, PCVOID src, int count);
 PVOID memzero(PVOID dst, int len);
 
 #endif

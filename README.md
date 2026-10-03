@@ -19,7 +19,7 @@
 
 - **MBR** — 用于引导系统盘和分区表。
 - **FAT32 (read-only)** — 简化版FAT32读取实现在loader里，以后会写高级的多级目录+读写。
-- **`tools/mkfat`** — 一个用于创建FAT镜像的小工具，用C语言实现。
+- **镜像制作** — 使用 `dosfstools` 的 `mkfs.fat` 和 `mtools` 的 `mcopy`，支持递归目录；安装这两个工具包后运行 `make`。FAT32 每扇区固定 512 字节、每簇 1 扇区。`resources/` 中的文件打包到镜像的 `/RES/`。原 `tools/mkfat` 保留作实验代码。
 
 其他内容（shell、实用工具等）还在规划中，没全实现。
 

@@ -4,6 +4,6 @@
 #include "stdint.h"
 
 BYTE hex_digit(char c);
-int hex_parse(const char **p, PDWORD out);
+int hex_parse(PPCSTR p, PDWORD out);
 
 #endif
